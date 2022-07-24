@@ -3,6 +3,7 @@ package point
 import (
 	"fmt"
 	"math"
+	"math/big"
 
 	fe "github.com/ryohare/programming-bitcoin-go/pkg/ecc/fieldelement"
 )
@@ -15,6 +16,17 @@ type Point struct {
 	B *fe.FieldElement
 	X *fe.FieldElement
 	Y *fe.FieldElement
+}
+
+func (p Point) String() string {
+	return fmt.Sprintf(
+		"Point(%s,%s)_%s_%s FieldElement(%s)",
+		p.X.String(),
+		p.Y.String(),
+		p.A.String(),
+		p.B.String(),
+		p.A.Prime.String(),
+	)
 }
 
 func MakePoint(a, b, x, y *fe.FieldElement) (*Point, error) {
@@ -35,11 +47,11 @@ func MakePoint(a, b, x, y *fe.FieldElement) (*Point, error) {
 			nil
 	}
 
-	y2, err := fe.Exponentiate(y, 2)
+	y2, err := fe.Exponentiate(y, big.NewInt(2))
 	if err != nil {
 		return nil, fmt.Errorf("failed to exponentiate %v because %s", y, err.Error())
 	}
-	x3, err := fe.Exponentiate(x, 3)
+	x3, err := fe.Exponentiate(x, big.NewInt(3))
 	if err != nil {
 		return nil, fmt.Errorf("failed to exponentiate %v because %s", x, err.Error())
 	}
@@ -88,7 +100,7 @@ func Addition(p1, p2 *Point) (*Point, error) {
 		return nil, fmt.Errorf("points are not on the same curve")
 	}
 
-	// check for points at infinity, additive identity property
+	// Case 0.0: self is the point at infinity, return other
 	if p1.X == nil {
 		return p2, nil
 	}
@@ -96,7 +108,8 @@ func Addition(p1, p2 *Point) (*Point, error) {
 		return p1, nil
 	}
 
-	// check for a straigt y line
+	// Case 1: self.x == other.x, self.y != other.y
+	// Result is point at infinity
 	if p1.X == p2.X && p1.Y != p2.Y {
 		return &Point{
 				p1.A,
@@ -107,7 +120,11 @@ func Addition(p1, p2 *Point) (*Point, error) {
 			nil
 	}
 
-	// do the addition
+	// Case 2: self.x ≠ other.x
+	// Formula (x3,y3)==(x1,y1)+(x2,y2)
+	// s=(y2-y1)/(x2-x1)
+	// x3=s**2-x1-x2
+	// y3=s*(x1-x3)-y1
 	if !fe.Equal(p1.X, p2.X) {
 
 		//(p2.Y - p1.Y) / (p2.X - p1.X)
@@ -126,7 +143,7 @@ func Addition(p1, p2 *Point) (*Point, error) {
 		fmt.Println(s)
 
 		// x = s^2 - p1.X - p2.X
-		s2, err := fe.Exponentiate(s, 2)
+		s2, err := fe.Exponentiate(s, big.NewInt(2))
 		if err != nil {
 			return nil, fmt.Errorf("failed to exponentiate %v by %d", s, 2)
 		}
@@ -162,30 +179,66 @@ func Addition(p1, p2 *Point) (*Point, error) {
 			nil
 	}
 
-	// one more exception
-	// if Equal(p1, p2) && p1.Y == 0*p1.X {
-	// 	return &Point{
-	// 			A: p1.A,
-	// 			B: p1.B,
-	// 			X: nil,
-	// 			Y: nil,
-	// 		},
-	// 		nil
-	// }
+	// Case 4: if we are tangent to the vertical line,
+	// we return the point at infinity
+	// note instead of figuring out what 0 is for each type
+	// we just use 0 * self.x
 
-	// // Adding against self
-	// if Equal(p1, p2) {
-	// 	s := (3*int64(math.Pow(float64(p1.X), 2)) + p1.A) / (2 * p1.Y)
-	// 	x := int64(math.Pow(float64(s), 2)) - 2*p1.X
-	// 	y := s*(p1.X-x) - p1.Y
-	// 	fmt.Println(y)
-	// 	return &Point{
-	// 			A: p1.A,
-	// 			B: p1.B,
-	// 			X: x,
-	// 			Y: y,
-	// 		},
-	// 		nil
-	// }
+	// if they are the same
+	if Equal(p1, p2) {
+
+		// calculate this out here
+		zeroFieldElement := &fe.FieldElement{Num: big.NewInt(0), Prime: p1.A.Prime}
+
+		// ger the zeroith field element
+		zero, err := fe.Multiply(p1.X, zeroFieldElement)
+		if err != nil {
+			return nil, fmt.Errorf("failed multiply because %s", err.Error())
+		}
+
+		if fe.Equal(p1.Y, zero) {
+			return &Point{
+					A: p1.A,
+					B: p1.B,
+					X: nil,
+					Y: nil,
+				},
+				nil
+		}
+	}
+
+	// # Case 3: self == other
+	// # Formula (x3,y3)=(x1,y1)+(x2,y2)
+	// # s=(3*x1**2+a)/(2*y1)
+	// # x3=s**2-2*x1
+	// # y3=s*(x1-x3)-y1
+	// if self == other:
+	// 	s = (3 * self.x**2 + self.a) / (2 * self.y)
+	// 	x = s**2 - 2 * self.x
+	// 	y = s * (self.x - x) - self.y
+	// 	return self.__class__(x, y, self.a, self.b)
+	if Equal(p1, p2) {
+		// s=(3*acc+a)/(2*y1)
+		lhs := p1.X
+		lhs, _ = fe.Exponentiate(lhs, big.NewInt(2))
+		lhs, _ = fe.Multiply(
+			&fe.FieldElement{
+				Num:   big.NewInt(0),
+				Prime: p1.X.Prime,
+			},
+			lhs,
+		)
+		lhs, _ = fe.Add(lhs, p1.A)
+
+		rhs, _ := fe.Multiply(&fe.FieldElement{Num: big.NewInt(2), Prime: p1.X.Prime}, p1.Y)
+
+		fmt.Print(lhs)
+		fmt.Println(rhs)
+
+		res, _ := fe.Divide(lhs, rhs)
+
+		fmt.Println(res)
+	}
+
 	return nil, fmt.Errorf("failed to find addition condition which matches the two points")
 }
