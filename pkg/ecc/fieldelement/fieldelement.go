@@ -1,4 +1,4 @@
-package fieldelemen
+package fieldelement
 
 import (
 	"fmt"
@@ -67,9 +67,7 @@ func Multiply(fe1, fe2 *FieldElement) (*FieldElement, error) {
 func Exponentiate(fe1 *FieldElement, exponent int64) (*FieldElement, error) {
 
 	n := exponent % (fe1.Prime - 1)
-	fmt.Println(n)
 	num := int64(math.Pow(float64(fe1.Num), float64(n))) % fe1.Prime
-	fmt.Println(num)
 	return &FieldElement{
 			Num:   num,
 			Prime: fe1.Prime,
