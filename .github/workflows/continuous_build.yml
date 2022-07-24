@@ -1,0 +1,34 @@
+name: Continuous / Build
+
+on:
+  push:
+    branches:
+      - 'main'
+    tags-ignore:
+      - 'v**'
+
+env:
+  AWS_REGION: us-east-1
+  DOCKER_BUILDKIT: 1
+  COMPOSE_INTERACTIVE_NO_CLI: 1
+
+jobs:
+
+  build:
+    runs-on: [ ubuntu-latest ]
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+      - run: |
+        go build main.go
+
+  test:
+   runs-on: [ ubuntu-latest ]
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+      - run: |
+        go test -v github.com/ryohare/programming-bitcoin-go/pkg/ecc/fieldelement
+        go test -v github.com/ryohare/programming-bitcoin-go/pkg/ecc/point
