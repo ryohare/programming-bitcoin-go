@@ -1,3 +1,3 @@
-module github.com/ryohare/programing-bitcoin-go
+module github.com/ryohare/programming-bitcoin-go
 
 go 1.18
