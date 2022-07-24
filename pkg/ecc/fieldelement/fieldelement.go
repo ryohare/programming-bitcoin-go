@@ -1,4 +1,4 @@
-package ecc
+package fieldelemen
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ type FieldElement struct {
 	Prime int64
 }
 
-func Make(num, prime int64) *FieldElement {
+func MakeFieldElement(num, prime int64) *FieldElement {
 	return &FieldElement{
 		Num:   num,
 		Prime: prime,

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	ecc "github.com/ryohare/programming-bitcoin-go/pkg/ecc"
+	ecc "github.com/ryohare/programming-bitcoin-go/pkg/ecc/fieldelement"
 )
 
 func main() {
