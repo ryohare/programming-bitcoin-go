@@ -108,7 +108,7 @@ func Addition(p1, p2 *Point) (*Point, error) {
 	}
 
 	// do the addition
-	if p1.X != p2.X {
+	if !fe.Equal(p1.X, p2.X) {
 
 		//(p2.Y - p1.Y) / (p2.X - p1.X)
 		lhs, err := fe.Subtract(p2.Y, p1.Y)
