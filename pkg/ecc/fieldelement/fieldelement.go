@@ -17,7 +17,7 @@ func MakeFieldElement(num, prime int64) *FieldElement {
 	}
 }
 
-func Equal(fe1, fe2 FieldElement) bool {
+func Equal(fe1, fe2 *FieldElement) bool {
 	return fe1.Num == fe2.Num && fe1.Prime == fe2.Prime
 }
 
