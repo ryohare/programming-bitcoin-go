@@ -132,3 +132,13 @@ func Divide(fe1, fe2 *FieldElement) (*FieldElement, error) {
 		},
 		nil
 }
+
+// def __rmul__(self, coefficient):
+// num = (self.num * coefficient) % self.prime
+// return self.__class__(num=num, prime=self.prime)
+func RMultiply(fe1 *FieldElement, coefficient *big.Int) (*FieldElement, error) {
+	num := big.NewInt(0)
+	num = num.Mul(fe1.Num, coefficient)
+	num = num.Mod(num, fe1.Prime)
+	return &FieldElement{Num: num, Prime: fe1.Prime}, nil
+}

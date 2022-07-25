@@ -19,13 +19,27 @@ type Point struct {
 }
 
 func (p Point) String() string {
+	// x and y can be nil
+	x := "inf"
+	y := "inf"
+	if p.X != nil {
+		x = p.X.Num.String()
+	}
+	if p.Y != nil {
+		y = p.Y.Num.String()
+	}
+
+	if x == "inf" {
+		return "Point(infinity)"
+	}
+
 	return fmt.Sprintf(
 		"Point(%s,%s)_%s_%s FieldElement(%s)",
-		p.X.String(),
-		p.Y.String(),
-		p.A.String(),
-		p.B.String(),
-		p.A.Prime.String(),
+		x,
+		y,
+		p.A.Num,
+		p.B.Num,
+		p.A.Prime,
 	)
 }
 
@@ -140,7 +154,6 @@ func Addition(p1, p2 *Point) (*Point, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed division of %v and %v", lhs, rhs)
 		}
-		fmt.Println(s)
 
 		// x = s^2 - p1.X - p2.X
 		s2, err := fe.Exponentiate(s, big.NewInt(2))
@@ -204,41 +217,64 @@ func Addition(p1, p2 *Point) (*Point, error) {
 					Y: nil,
 				},
 				nil
+		} else {
+			// # Case 3: self == other
+			// # Formula (x3,y3)=(x1,y1)+(x2,y2)
+			// # s=(3*x1**2+a)/(2*y1)
+			// # x3=s**2-2*x1
+			// # y3=s*(x1-x3)-y1
+			// if self == other:
+			// 	s = (3 * self.x**2 + self.a) / (2 * self.y)
+			// 	x = s**2 - 2 * self.x
+			// 	y = s * (self.x - x) - self.y
+			// 	return self.__class__(x, y, self.a, self.b)
+			if Equal(p1, p2) {
+				// s=(3*acc+a)/(2*y1)
+				lhs := p1.X
+				lhs, _ = fe.Exponentiate(lhs, big.NewInt(2))
+				lhs, _ = fe.RMultiply(lhs, big.NewInt(3))
+				lhs, _ = fe.Add(lhs, p1.A)
+				rhs, _ := fe.RMultiply(p1.Y, big.NewInt(2))
+				s, _ := fe.Divide(lhs, rhs)
+
+				// x = s**2 - 2 * self.x
+				s2, _ := fe.Exponentiate(s, big.NewInt(2))
+				x2, _ := fe.RMultiply(p1.X, big.NewInt(2))
+				x, _ := fe.Subtract(s2, x2)
+
+				// y = s * (self.x - x) - self.y
+				ix, _ := fe.Subtract(p1.X, x)
+				sx, _ := fe.Multiply(ix, s)
+				y, _ := fe.Subtract(sx, p1.Y)
+
+				return &Point{
+						A: p1.A,
+						B: p2.B,
+						X: x,
+						Y: y,
+					},
+					nil
+			}
 		}
 	}
 
-	// # Case 3: self == other
-	// # Formula (x3,y3)=(x1,y1)+(x2,y2)
-	// # s=(3*x1**2+a)/(2*y1)
-	// # x3=s**2-2*x1
-	// # y3=s*(x1-x3)-y1
-	// if self == other:
-	// 	s = (3 * self.x**2 + self.a) / (2 * self.y)
-	// 	x = s**2 - 2 * self.x
-	// 	y = s * (self.x - x) - self.y
-	// 	return self.__class__(x, y, self.a, self.b)
-	if Equal(p1, p2) {
-		// s=(3*acc+a)/(2*y1)
-		lhs := p1.X
-		lhs, _ = fe.Exponentiate(lhs, big.NewInt(2))
-		lhs, _ = fe.Multiply(
-			&fe.FieldElement{
-				Num:   big.NewInt(0),
-				Prime: p1.X.Prime,
-			},
-			lhs,
-		)
-		lhs, _ = fe.Add(lhs, p1.A)
+	return nil, fmt.Errorf("failed to find addition condition which matches the two points")
+}
 
-		rhs, _ := fe.Multiply(&fe.FieldElement{Num: big.NewInt(2), Prime: p1.X.Prime}, p1.Y)
-
-		fmt.Print(lhs)
-		fmt.Println(rhs)
-
-		res, _ := fe.Divide(lhs, rhs)
-
-		fmt.Println(res)
+func RMultiply(p1 *Point, coefficient *big.Int) (*Point, error) {
+	product := &Point{
+		p1.A,
+		p1.B,
+		nil,
+		nil,
 	}
 
-	return nil, fmt.Errorf("failed to find addition condition which matches the two points")
+	// bad design TODO - do the bit shift stuff
+	start := big.NewInt(0)
+	end := coefficient
+	var one = big.NewInt(1)
+	for i := new(big.Int).Set(start); i.Cmp(end) < 0; i.Add(i, one) {
+		product, _ = Addition(product, p1)
+	}
+	return product, nil
 }

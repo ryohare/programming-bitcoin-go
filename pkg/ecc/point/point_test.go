@@ -1,7 +1,6 @@
 package point
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -70,6 +69,7 @@ func TestAddition(t *testing.T) {
 		X: x1,
 		Y: y1,
 	}
+
 	p2 := &Point{
 		A: a,
 		B: b,
@@ -155,6 +155,37 @@ func TestAddition(t *testing.T) {
 	if res.X.Num.Cmp(big.NewInt(47)) != 0 && res.Y.Num.Cmp(big.NewInt(71)) != 0 {
 		t.Errorf("failed to add points %v and %v", p1, p2)
 	}
+}
 
-	fmt.Println(res.String())
+func TestRMultiplication(t *testing.T) {
+	var prime int64 = 223
+	a := &fe.FieldElement{Num: big.NewInt(0), Prime: big.NewInt(prime)}
+	b := &fe.FieldElement{Num: big.NewInt(7), Prime: big.NewInt(prime)}
+	x1 := &fe.FieldElement{Num: big.NewInt(47), Prime: big.NewInt(prime)}
+	y1 := &fe.FieldElement{Num: big.NewInt(71), Prime: big.NewInt(prime)}
+	p1 := &Point{
+		X: x1,
+		Y: y1,
+		A: a,
+		B: b,
+	}
+
+	res, _ := RMultiply(p1, big.NewInt(1))
+
+	if res.X.Num.Cmp(big.NewInt(47)) != 0 && res.Y.Num.Cmp(big.NewInt(71)) != 0 {
+		t.Errorf("failed for point %s", res.String())
+	}
+	res, _ = RMultiply(p1, big.NewInt(2))
+	if res.X.Num.Cmp(big.NewInt(36)) != 0 && res.Y.Num.Cmp(big.NewInt(111)) != 0 {
+		t.Errorf("failed for point %s", res.String())
+	}
+	res, _ = RMultiply(p1, big.NewInt(8))
+	if res.X.Num.Cmp(big.NewInt(116)) != 0 && res.Y.Num.Cmp(big.NewInt(55)) != 0 {
+		t.Errorf("failed for point %s", res.String())
+	}
+	res, _ = RMultiply(p1, big.NewInt(15))
+	if res.X.Num.Cmp(big.NewInt(139)) != 0 && res.Y.Num.Cmp(big.NewInt(86)) != 0 {
+		t.Errorf("failed for point %s", res.String())
+	}
+
 }
