@@ -15,7 +15,7 @@ func TestPoint(t *testing.T) {
 	y1 := &fe.FieldElement{Num: big.NewInt(105), Prime: big.NewInt(prime)}
 	x2 := &fe.FieldElement{Num: big.NewInt(17), Prime: big.NewInt(prime)}
 	y2 := &fe.FieldElement{Num: big.NewInt(56), Prime: big.NewInt(prime)}
-	_, err := MakePoint(a, b, x1, y1)
+	_, err := Make(a, b, x1, y1)
 
 	if err != nil {
 		t.Errorf(
@@ -23,7 +23,7 @@ func TestPoint(t *testing.T) {
 		)
 	}
 
-	_, err = MakePoint(a, b, x2, y2)
+	_, err = Make(a, b, x2, y2)
 
 	if err != nil {
 		t.Errorf(

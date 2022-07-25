@@ -43,7 +43,7 @@ func (p Point) String() string {
 	)
 }
 
-func MakePoint(a, b, x, y *fe.FieldElement) (*Point, error) {
+func Make(a, b, x, y *fe.FieldElement) (*Point, error) {
 
 	// Ensure the point is on the curve
 	// y^2 = x^3 + ax + b
