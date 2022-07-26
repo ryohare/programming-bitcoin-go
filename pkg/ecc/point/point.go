@@ -82,6 +82,9 @@ func Make(a, b, x, y *fe.FieldElement) (*Point, error) {
 		return nil, fmt.Errorf("failed to add %v because %s", y, err.Error())
 	}
 
+	fmt.Println(y2.String())
+	fmt.Println(rhs.String())
+
 	// check the the point is on the curve
 	if !fe.Equal(rhs, y2) {
 		return nil, fmt.Errorf("(%d,%d) is not on the curve", x, y)
