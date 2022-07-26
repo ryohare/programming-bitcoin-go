@@ -29,7 +29,7 @@ func TestGetGeneratorPoint(t *testing.T) {
 	pi := GetGeneratorPoint()
 	n := GetNonce()
 
-	np, err := point.RMultiply(pi, n)
+	np, err := point.RMultiply(pi, *n)
 
 	if err != nil {
 		t.Errorf("failed to validate generator point because %s", err.Error())

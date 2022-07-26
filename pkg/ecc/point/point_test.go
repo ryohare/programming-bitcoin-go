@@ -170,20 +170,20 @@ func TestRMultiplication(t *testing.T) {
 		B: b,
 	}
 
-	res, _ := RMultiply(p1, big.NewInt(1))
+	res, _ := RMultiply(p1, *big.NewInt(1))
 
 	if res.X.Num.Cmp(big.NewInt(47)) != 0 && res.Y.Num.Cmp(big.NewInt(71)) != 0 {
 		t.Errorf("failed for point %s", res.String())
 	}
-	res, _ = RMultiply(p1, big.NewInt(2))
+	res, _ = RMultiply(p1, *big.NewInt(2))
 	if res.X.Num.Cmp(big.NewInt(36)) != 0 && res.Y.Num.Cmp(big.NewInt(111)) != 0 {
 		t.Errorf("failed for point %s", res.String())
 	}
-	res, _ = RMultiply(p1, big.NewInt(8))
+	res, _ = RMultiply(p1, *big.NewInt(8))
 	if res.X.Num.Cmp(big.NewInt(116)) != 0 && res.Y.Num.Cmp(big.NewInt(55)) != 0 {
 		t.Errorf("failed for point %s", res.String())
 	}
-	res, _ = RMultiply(p1, big.NewInt(15))
+	res, _ = RMultiply(p1, *big.NewInt(15))
 	if res.X.Num.Cmp(big.NewInt(139)) != 0 && res.Y.Num.Cmp(big.NewInt(86)) != 0 {
 		t.Errorf("failed for point %s", res.String())
 	}

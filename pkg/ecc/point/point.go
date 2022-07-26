@@ -61,29 +61,33 @@ func Make(a, b, x, y *fe.FieldElement) (*Point, error) {
 			nil
 	}
 
-	y2, err := fe.Exponentiate(y, big.NewInt(2))
+	y2, err := fe.Exponentiate(y, *big.NewInt(2))
 	if err != nil {
 		return nil, fmt.Errorf("failed to exponentiate %v because %s", y, err.Error())
 	}
-	x3, err := fe.Exponentiate(x, big.NewInt(3))
+	fmt.Println(y2.Num.String())
+	x3, err := fe.Exponentiate(x, *big.NewInt(3))
 	if err != nil {
 		return nil, fmt.Errorf("failed to exponentiate %v because %s", x, err.Error())
 	}
+	fmt.Println(x3.Num.String())
 	ax, err := fe.Multiply(a, x)
 	if err != nil {
 		return nil, fmt.Errorf("failed to mulitply %v because %s", y, err.Error())
 	}
+	fmt.Println(ax.Num.String())
 	rhs, err := fe.Add(x3, ax)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add %v because %s", y, err.Error())
 	}
+	fmt.Println(rhs.Num.String())
 	rhs, err = fe.Add(rhs, b)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add %v because %s", y, err.Error())
 	}
 
-	fmt.Println(y2.String())
-	fmt.Println(rhs.String())
+	fmt.Println(y2.Num.String())
+	fmt.Println(rhs.Num.String())
 
 	// check the the point is on the curve
 	if !fe.Equal(rhs, y2) {
@@ -159,7 +163,7 @@ func Addition(p1, p2 *Point) (*Point, error) {
 		}
 
 		// x = s^2 - p1.X - p2.X
-		s2, err := fe.Exponentiate(s, big.NewInt(2))
+		s2, err := fe.Exponentiate(s, *big.NewInt(2))
 		if err != nil {
 			return nil, fmt.Errorf("failed to exponentiate %v by %d", s, 2)
 		}
@@ -234,14 +238,14 @@ func Addition(p1, p2 *Point) (*Point, error) {
 			if Equal(p1, p2) {
 				// s=(3*acc+a)/(2*y1)
 				lhs := p1.X
-				lhs, _ = fe.Exponentiate(lhs, big.NewInt(2))
+				lhs, _ = fe.Exponentiate(lhs, *big.NewInt(2))
 				lhs, _ = fe.RMultiply(lhs, big.NewInt(3))
 				lhs, _ = fe.Add(lhs, p1.A)
 				rhs, _ := fe.RMultiply(p1.Y, big.NewInt(2))
 				s, _ := fe.Divide(lhs, rhs)
 
 				// x = s**2 - 2 * self.x
-				s2, _ := fe.Exponentiate(s, big.NewInt(2))
+				s2, _ := fe.Exponentiate(s, *big.NewInt(2))
 				x2, _ := fe.RMultiply(p1.X, big.NewInt(2))
 				x, _ := fe.Subtract(s2, x2)
 
@@ -264,7 +268,7 @@ func Addition(p1, p2 *Point) (*Point, error) {
 	return nil, fmt.Errorf("failed to find addition condition which matches the two points")
 }
 
-func RMultiply(p1 *Point, coefficient *big.Int) (*Point, error) {
+func RMultiplyV2(p1 *Point, coefficient *big.Int) (*Point, error) {
 	product := &Point{
 		p1.A,
 		p1.B,
@@ -280,4 +284,33 @@ func RMultiply(p1 *Point, coefficient *big.Int) (*Point, error) {
 		product, _ = Addition(product, p1)
 	}
 	return product, nil
+}
+
+func RMultiply(p1 *Point, coefficient big.Int) (*Point, error) {
+	coef := coefficient
+	current := p1
+	result := &Point{
+		p1.A,
+		p1.B,
+		nil,
+		nil,
+	}
+
+	for {
+		if coef.Cmp(big.NewInt(0)) == 0 {
+			break
+		}
+
+		tmp := new(big.Int)
+
+		if tmp.And(&coef, big.NewInt(1)).String() == "1" {
+			result, _ = Addition(result, current)
+		}
+		current, _ = Addition(current, current)
+
+		coef.Rsh(&coef, 1)
+	}
+
+	return result, nil
+
 }

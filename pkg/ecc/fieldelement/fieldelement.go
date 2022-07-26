@@ -84,24 +84,33 @@ func Multiply(fe1, fe2 *FieldElement) (*FieldElement, error) {
 		nil
 }
 
-func Exponentiate(fe1 *FieldElement, exponent *big.Int) (*FieldElement, error) {
+func Exponentiate(fe1 *FieldElement, exponent big.Int) (*FieldElement, error) {
+	fmt.Println(fe1.Num.String())
+	// n := big.NewInt(0)
+	// primeMinus1 := big.NewInt(0)
 
-	n := big.NewInt(0)
-	primeMinus1 := big.NewInt(0)
+	// primeMinus1 = primeMinus1.Sub(fe1.Prime, big.NewInt(1))
+	// n = n.Mod(exponent, primeMinus1)
 
-	primeMinus1 = primeMinus1.Sub(fe1.Prime, big.NewInt(1))
-	n = n.Mod(exponent, primeMinus1)
+	// //n := exponent % (fe1.Prime - 1)
 
-	//n := exponent % (fe1.Prime - 1)
+	// // num := int64(math.Pow(float64(fe1.Num), float64(n))) % fe1.Prime
 
-	// num := int64(math.Pow(float64(fe1.Num), float64(n))) % fe1.Prime
+	// // num = fe1.num^n % fe1.Prime
+	// fe1ToTheN := big.NewInt(fe1.Num.Int64())
+	// fe1ToTheN = fe1ToTheN.Exp(fe1ToTheN, n, fe1.Prime)
 
-	// num = fe1.num^n % fe1.Prime
-	fe1ToTheN := big.NewInt(fe1.Num.Int64())
-	fe1ToTheN = fe1ToTheN.Exp(fe1ToTheN, n, fe1.Prime)
+	// n = exponent % (self.prime - 1)
+	// num = pow(self.num, n, self.prime)
+	tmp := new(big.Int)
+	prime := tmp.Sub(fe1.Prime, big.NewInt(1))
+	exp := exponent
+	n := exp.Mod(&exponent, prime)
+	tmp = new(big.Int)
+	num := tmp.Exp(fe1.Num, n, fe1.Prime)
 
 	return &FieldElement{
-			Num:   fe1ToTheN,
+			Num:   num,
 			Prime: fe1.Prime,
 		},
 		nil
