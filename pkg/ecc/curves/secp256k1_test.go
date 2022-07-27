@@ -19,9 +19,6 @@ func TestGetGeneratorPoint(t *testing.T) {
 	gx = gx.Add(gx, big.NewInt(7))
 	gx = gx.Mod(gx, p)
 
-	fmt.Println(gy.String())
-	fmt.Println(gx.String())
-
 	if gx.Cmp(gy) != 0 {
 		t.Error("gx, gy or p is off")
 	}

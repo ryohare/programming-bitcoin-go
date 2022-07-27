@@ -81,7 +81,7 @@ func TestExponentiation(t *testing.T) {
 		Prime: big.NewInt(13),
 	}
 
-	fee, _ := Exponentiate(fe1, big.NewInt(3))
+	fee, _ := Exponentiate(fe1, *big.NewInt(3))
 	fmt.Println(fee)
 
 	if fee.Num.Cmp(big.NewInt(5)) != 0 && fee.Prime.Cmp(big.NewInt(13)) != 0 {

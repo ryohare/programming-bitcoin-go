@@ -85,7 +85,6 @@ func Multiply(fe1, fe2 *FieldElement) (*FieldElement, error) {
 }
 
 func Exponentiate(fe1 *FieldElement, exponent big.Int) (*FieldElement, error) {
-	fmt.Println(fe1.Num.String())
 	// n := big.NewInt(0)
 	// primeMinus1 := big.NewInt(0)
 
