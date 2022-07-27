@@ -65,29 +65,22 @@ func Make(a, b, x, y *fe.FieldElement) (*Point, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to exponentiate %v because %s", y, err.Error())
 	}
-	fmt.Println(y2.Num.String())
 	x3, err := fe.Exponentiate(x, *big.NewInt(3))
 	if err != nil {
 		return nil, fmt.Errorf("failed to exponentiate %v because %s", x, err.Error())
 	}
-	fmt.Println(x3.Num.String())
 	ax, err := fe.Multiply(a, x)
 	if err != nil {
 		return nil, fmt.Errorf("failed to mulitply %v because %s", y, err.Error())
 	}
-	fmt.Println(ax.Num.String())
 	rhs, err := fe.Add(x3, ax)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add %v because %s", y, err.Error())
 	}
-	fmt.Println(rhs.Num.String())
 	rhs, err = fe.Add(rhs, b)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add %v because %s", y, err.Error())
 	}
-
-	fmt.Println(y2.Num.String())
-	fmt.Println(rhs.Num.String())
 
 	// check the the point is on the curve
 	if !fe.Equal(rhs, y2) {
@@ -131,7 +124,16 @@ func Addition(p1, p2 *Point) (*Point, error) {
 
 	// Case 1: self.x == other.x, self.y != other.y
 	// Result is point at infinity
-	if p1.X == p2.X && p1.Y != p2.Y {
+	// if p1.X == p2.X && p1.Y != p2.Y {
+	// 	return &Point{
+	// 			p1.A,
+	// 			p1.B,
+	// 			nil,
+	// 			nil,
+	// 		},
+	// 		nil
+	// }
+	if fe.Equal(p1.X, p2.X) && !fe.Equal(p1.Y, p2.Y) {
 		return &Point{
 				p1.A,
 				p1.B,
@@ -264,8 +266,8 @@ func Addition(p1, p2 *Point) (*Point, error) {
 			}
 		}
 	}
-
-	return nil, fmt.Errorf("failed to find addition condition which matches the two points")
+	fmt.Println("fuck")
+	return nil, fmt.Errorf("fdddddd")
 }
 
 func RMultiplyV2(p1 *Point, coefficient *big.Int) (*Point, error) {
