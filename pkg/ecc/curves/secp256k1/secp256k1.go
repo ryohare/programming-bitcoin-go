@@ -8,6 +8,7 @@ import (
 )
 
 // Default vaules for the Secp256k1 Curve
+// all base 16 except for the P
 const N = "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141"
 const GX = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
 const GY = "483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"
@@ -16,6 +17,34 @@ const P = "115792089237316195423570985008687907853269984665640564039457584007908
 // A/B for the Secp256k1 Curve
 const A = 0
 const B = 7
+
+func RMultiply(p point.Point, coefficient big.Int) (*point.Point, error) {
+	_c := coefficient
+	coef := _c.Mod(&coefficient, GetNonce())
+	return point.RMultiply(&p, *coef)
+}
+
+func MakePoint(x, y *big.Int) *point.Point {
+	p, _ := new(big.Int).SetString(P, 10)
+	return &point.Point{
+		A: &fe.FieldElement{
+			Num:   big.NewInt(A),
+			Prime: p,
+		},
+		B: &fe.FieldElement{
+			Num:   big.NewInt(B),
+			Prime: p,
+		},
+		X: &fe.FieldElement{
+			Num:   x,
+			Prime: p,
+		},
+		Y: &fe.FieldElement{
+			Num:   y,
+			Prime: p,
+		},
+	}
+}
 
 func GetGx() *big.Int {
 	gx, _ := new(big.Int).SetString(GX, 16)

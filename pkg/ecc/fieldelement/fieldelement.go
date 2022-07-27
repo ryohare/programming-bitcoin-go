@@ -14,7 +14,7 @@ func (f FieldElement) String() string {
 	return fmt.Sprintf("FieldElement_%s(%s)", f.Prime.String(), f.Num.String())
 }
 
-func MakeFieldElement(num, prime big.Int) *FieldElement {
+func Make(num, prime big.Int) *FieldElement {
 	return &FieldElement{
 		Num:   &num,
 		Prime: &prime,

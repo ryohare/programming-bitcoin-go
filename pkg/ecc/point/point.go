@@ -110,7 +110,7 @@ func NotEqual(p1, p2 *Point) bool {
 func Addition(p1, p2 *Point) (*Point, error) {
 
 	// make sure both points are on the same curve
-	if p1.A != p2.A || p1.B != p2.B {
+	if !fe.Equal(p1.A, p2.A) || !fe.Equal(p1.B, p2.B) {
 		return nil, fmt.Errorf("points are not on the same curve")
 	}
 
@@ -266,26 +266,7 @@ func Addition(p1, p2 *Point) (*Point, error) {
 			}
 		}
 	}
-	fmt.Println("fuck")
-	return nil, fmt.Errorf("fdddddd")
-}
-
-func RMultiplyV2(p1 *Point, coefficient *big.Int) (*Point, error) {
-	product := &Point{
-		p1.A,
-		p1.B,
-		nil,
-		nil,
-	}
-
-	// bad design TODO - do the bit shift stuff
-	start := big.NewInt(0)
-	end := coefficient
-	var one = big.NewInt(1)
-	for i := new(big.Int).Set(start); i.Cmp(end) < 0; i.Add(i, one) {
-		product, _ = Addition(product, p1)
-	}
-	return product, nil
+	return nil, fmt.Errorf("failed to find condition for addition")
 }
 
 func RMultiply(p1 *Point, coefficient big.Int) (*Point, error) {
