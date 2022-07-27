@@ -1,7 +1,6 @@
 package secp256k1
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -32,5 +31,7 @@ func TestGetGeneratorPoint(t *testing.T) {
 		t.Errorf("failed to validate generator point because %s", err.Error())
 	}
 
-	fmt.Println(np)
+	if np.X != nil || np.Y != nil {
+		t.Errorf("failed to prove the generator point with the nonce makes a point at infinity")
+	}
 }
