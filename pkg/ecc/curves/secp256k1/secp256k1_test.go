@@ -1,7 +1,6 @@
 package secp256k1
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -56,7 +55,6 @@ func TestSigVerify(t *testing.T) {
 	// validated
 	u := tmpSInv.Mul(z, sInv)
 	u = u.Mod(u, GetNonce())
-	fmt.Println(u.String())
 	tmpSInv = new(big.Int)
 
 	//verified
