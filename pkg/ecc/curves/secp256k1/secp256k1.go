@@ -19,7 +19,7 @@ const A = 0
 const B = 7
 
 func RMultiply(p point.Point, coefficient big.Int) (*point.Point, error) {
-	_c := coefficient
+	_c := new(big.Int).Set(&coefficient)
 	coef := _c.Mod(&coefficient, GetNonce())
 	return point.RMultiply(&p, *coef)
 }

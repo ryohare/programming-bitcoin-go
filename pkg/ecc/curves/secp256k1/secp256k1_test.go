@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	point "github.com/ryohare/programming-bitcoin-go/pkg/ecc/point"
+	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
 func TestGetGeneratorPoint(t *testing.T) {
@@ -73,5 +74,32 @@ func TestSigVerify(t *testing.T) {
 	if sum.X.Num.Cmp(r) != 0 {
 		t.Error("failed to validate the signature")
 	}
+}
 
+func TestSigCreate(t *testing.T) {
+	e := new(big.Int).SetBytes(utils.Hash256([]byte("my secret")))
+	z := new(big.Int).SetBytes(utils.Hash256([]byte("my message")))
+	k := big.NewInt(int64(1234567890))
+	G := GetGeneratorPoint()
+	N := GetNonce()
+
+	rPoint, err := RMultiply(*G, *k)
+	if err != nil {
+		t.Errorf("failed RMultiply because %s", err.Error())
+	}
+	r := rPoint.X.Num
+
+	n2 := new(big.Int).Sub(N, big.NewInt(2))
+
+	tmp := big.NewInt(0)
+	kInv := tmp.Exp(k, n2, N)
+	s := new(big.Int).Mul(r, e)
+	s = new(big.Int).Add(s, z)
+	s = s.Mul(s, kInv)
+	s = s.Mod(s, N)
+
+	expectedValue, _ := new(big.Int).SetString("84619427107180774700812105800546110854811249640081541635353684743141289004217", 10)
+	if s.Cmp(expectedValue) != 0 {
+		t.Error("s value does not match the expected value")
+	}
 }

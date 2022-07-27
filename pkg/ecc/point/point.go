@@ -270,7 +270,7 @@ func Addition(p1, p2 *Point) (*Point, error) {
 }
 
 func RMultiply(p1 *Point, coefficient big.Int) (*Point, error) {
-	coef := coefficient
+	coef := new(big.Int).Set(&coefficient)
 	current := p1
 	var err error
 	result := &Point{
@@ -289,7 +289,7 @@ func RMultiply(p1 *Point, coefficient big.Int) (*Point, error) {
 
 		// WTF - Why do i need to do an str compare here
 		// when i do big.int == big.int it doesnt work
-		if tmp.And(&coef, big.NewInt(1)).String() == "1" {
+		if tmp.And(coef, big.NewInt(1)).String() == "1" {
 			result, err = Addition(result, current)
 			if err != nil {
 				return nil, err
@@ -300,7 +300,7 @@ func RMultiply(p1 *Point, coefficient big.Int) (*Point, error) {
 			return nil, err
 		}
 
-		coef.Rsh(&coef, 1)
+		coef.Rsh(coef, 1)
 	}
 
 	return result, nil

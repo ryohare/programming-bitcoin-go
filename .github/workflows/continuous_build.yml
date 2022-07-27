@@ -33,3 +33,4 @@ jobs:
           go test -v github.com/ryohare/programming-bitcoin-go/pkg/ecc/fieldelement
           go test -v github.com/ryohare/programming-bitcoin-go/pkg/ecc/point
           go test -v github.com/ryohare/programming-bitcoin-go/pkg/ecc/curves/secp256k1
+          go test -v github.com/ryohare/programming-bitcoin-go/pkg/utils
