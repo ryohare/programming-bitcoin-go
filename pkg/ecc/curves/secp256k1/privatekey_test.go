@@ -42,7 +42,7 @@ func TestSignMessage(t *testing.T) {
 		t.Errorf("failed to sign message because %s", err.Error())
 	}
 
-	status, err := sig.VerifySignature(pk.Point, message, sig)
+	status, err := VerifySignature(*pk, message, sig)
 
 	if err != nil {
 		t.Errorf("failed to verify signature because %s", err.Error())
