@@ -52,3 +52,10 @@ func TestSignMessage(t *testing.T) {
 		t.Error("failed to verify signature")
 	}
 }
+
+func TestGetDeterministsicK(t *testing.T) {
+	pk, _ := MakePrivateKey("secret")
+	// "secret" == 126879297332596
+
+	pk.GetDeterministsicK(big.NewInt(1000))
+}
