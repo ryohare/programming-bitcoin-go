@@ -3,14 +3,13 @@ package secp256k1
 import (
 	"math/big"
 	"testing"
-
-	point "github.com/ryohare/programming-bitcoin-go/pkg/ecc/point"
 )
 
 func TestHex(t *testing.T) {
 	message := "message"
 	secret := new(big.Int).SetBytes([]byte(message))
-	p, _ := point.RMultiply(GetGeneratorPoint(), *secret)
+	g := GetGeneratorPoint()
+	p, _ := RMultiply(*g, *secret)
 	pk := PrivateKey{
 		Secret: "message",
 		Point:  p,

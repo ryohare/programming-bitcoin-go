@@ -26,7 +26,7 @@ func TestGetGeneratorPoint(t *testing.T) {
 	pi := GetGeneratorPoint()
 	n := GetNonce()
 
-	np, err := point.RMultiply(pi, *n)
+	np, err := point.RMultiply(pi.Point, *n)
 
 	if err != nil {
 		t.Errorf("failed to validate generator point because %s", err.Error())
@@ -65,7 +65,7 @@ func TestSigVerify(t *testing.T) {
 	// verified
 	uG, _ := RMultiply(*G, *u)
 	vP, _ := RMultiply(*p, *v)
-	sum, err := point.Addition(uG, vP)
+	sum, err := point.Addition(uG.Point, vP.Point)
 
 	if err != nil {
 		t.Errorf("failed addition because %s", err.Error())
@@ -87,7 +87,7 @@ func TestSigCreate(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed RMultiply because %s", err.Error())
 	}
-	r := rPoint.X.Num
+	r := rPoint.Point.X.Num
 
 	n2 := new(big.Int).Sub(N, big.NewInt(2))
 

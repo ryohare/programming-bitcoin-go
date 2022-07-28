@@ -11,7 +11,7 @@ type Signature struct {
 	S *big.Int
 }
 
-func (s *Signature) VerifySignature(p *point.Point, z *big.Int, sig *Signature) (bool, error) {
+func (s *Signature) VerifySignature(p *S256Point, z *big.Int, sig *Signature) (bool, error) {
 	// validated
 	G := GetGeneratorPoint()
 	tmpSInv := new(big.Int)
@@ -32,7 +32,7 @@ func (s *Signature) VerifySignature(p *point.Point, z *big.Int, sig *Signature) 
 	// verified
 	uG, _ := RMultiply(*G, *u)
 	vP, _ := RMultiply(*p, *v)
-	sum, err := point.Addition(uG, vP)
+	sum, err := point.Addition(uG.Point, vP.Point)
 
 	if err != nil {
 		return false, err

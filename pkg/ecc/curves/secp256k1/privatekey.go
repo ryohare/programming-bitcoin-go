@@ -4,13 +4,11 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
-
-	point "github.com/ryohare/programming-bitcoin-go/pkg/ecc/point"
 )
 
 type PrivateKey struct {
 	Secret string
-	Point  *point.Point
+	Point  *S256Point
 }
 
 func MakePrivateKey(secret string) (*PrivateKey, error) {
@@ -18,7 +16,8 @@ func MakePrivateKey(secret string) (*PrivateKey, error) {
 	s := new(big.Int).SetBytes([]byte(secret))
 	pk.Secret = secret
 	var err error
-	pk.Point, err = RMultiply(*GetGeneratorPoint(), *s)
+	g := GetGeneratorPoint()
+	pk.Point, err = RMultiply(*g, *s)
 
 	if err != nil {
 		return nil, err
@@ -78,7 +77,7 @@ func (pk PrivateKey) Sign(z *big.Int) (*Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	r := rPoint.X.Num
+	r := rPoint.Point.X.Num
 
 	n2 := new(big.Int).Sub(N, big.NewInt(2))
 

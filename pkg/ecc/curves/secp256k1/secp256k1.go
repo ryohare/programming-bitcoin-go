@@ -18,15 +18,27 @@ const P = "115792089237316195423570985008687907853269984665640564039457584007908
 const A = 0
 const B = 7
 
-func RMultiply(p point.Point, coefficient big.Int) (*point.Point, error) {
-	_c := new(big.Int).Set(&coefficient)
-	coef := _c.Mod(&coefficient, GetNonce())
-	return point.RMultiply(&p, *coef)
+type S256Point struct {
+	Point *point.Point
 }
 
-func MakePoint(x, y *big.Int) *point.Point {
+func RMultiply(p S256Point, coefficient big.Int) (*S256Point, error) {
+	_c := new(big.Int).Set(&coefficient)
+	coef := _c.Mod(&coefficient, GetNonce())
+	point, err := point.RMultiply(p.Point, *coef)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &S256Point{
+		Point: point,
+	}, nil
+}
+
+func MakePoint(x, y *big.Int) *S256Point {
 	p, _ := new(big.Int).SetString(P, 10)
-	return &point.Point{
+	point := &point.Point{
 		A: &fe.FieldElement{
 			Num:   big.NewInt(A),
 			Prime: p,
@@ -44,6 +56,8 @@ func MakePoint(x, y *big.Int) *point.Point {
 			Prime: p,
 		},
 	}
+
+	return &S256Point{Point: point}
 }
 
 func GetGx() *big.Int {
@@ -61,7 +75,7 @@ func GetPrime() *big.Int {
 	return p
 }
 
-func GetGeneratorPoint() *point.Point {
+func GetGeneratorPoint() *S256Point {
 	gx, _ := new(big.Int).SetString(GX, 16)
 	gy, _ := new(big.Int).SetString(GY, 16)
 	p, _ := new(big.Int).SetString(P, 10)
@@ -86,7 +100,7 @@ func GetGeneratorPoint() *point.Point {
 		},
 	)
 
-	return point
+	return &S256Point{Point: point}
 }
 
 func GetNonce() *big.Int {
