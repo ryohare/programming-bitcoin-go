@@ -13,6 +13,19 @@ type PrivateKey struct {
 	Point  *S256Point
 }
 
+func MakePrivateKeyFromBigInt(secret *big.Int) (*PrivateKey, error) {
+	pk := &PrivateKey{}
+
+	var err error
+	pk.Point, err = RMultiply(*GetGeneratorPoint(), *secret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return pk, nil
+}
+
 func MakePrivateKey(secret string) (*PrivateKey, error) {
 	pk := &PrivateKey{}
 	s := new(big.Int).SetBytes([]byte(secret))
@@ -43,7 +56,7 @@ func (p PrivateKey) GetSecretBytes() []byte {
 
 func (p *PrivateKey) GetDeterministsicK(z *big.Int) *big.Int {
 
-	// 	k=b'\x00'*32
+	// k=b'\x00'*32
 	// v=b'\x01'*32
 	k := make([]byte, 32)
 	v := make([]byte, 32)
@@ -113,7 +126,6 @@ func (p *PrivateKey) GetDeterministsicK(z *big.Int) *big.Int {
 		mac.Write(v)
 		v = mac.Sum(nil)
 	}
-
 }
 
 func (pk PrivateKey) Sign(z *big.Int) (*Signature, error) {

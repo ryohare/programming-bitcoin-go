@@ -137,3 +137,13 @@ func VerifySignature(pk PrivateKey, z *big.Int, sig *Signature) (bool, error) {
 
 	return sum.X.Num.Cmp(sig.R) == 0, nil
 }
+
+func (s S256Point) Sec() []byte {
+	buf := make([]byte, 0, 32)
+
+	buf = append(buf, 0x04)
+	buf = append(buf, s.Point.X.Num.Bytes()...)
+	buf = append(buf, s.Point.Y.Num.Bytes()...)
+
+	return buf
+}
