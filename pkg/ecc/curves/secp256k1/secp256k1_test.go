@@ -139,17 +139,17 @@ func TestGlobalSigVerify(t *testing.T) {
 func TestSec(t *testing.T) {
 	a1, _ := new(big.Int).SetString("04ffe558e388852f0120e46af2d1b370f85854a8eb0841811ece0e3e03d282d57c315dc72890a4f10a1481c031b03b351b0dc79901ca18a00cf009dbdb157a1d10", 16)
 	priv, _ := MakePrivateKeyFromBigInt(big.NewInt(5000))
-	c1 := new(big.Int).SetBytes(priv.Point.Sec())
+	c1 := new(big.Int).SetBytes(priv.Point.Sec(false))
 	if a1.Cmp(c1) != 0 {
 		t.Error("sec keys are not the same")
 	}
-	fmt.Printf("%x\n", priv.Point.Sec())
+	fmt.Printf("%x\n", priv.Point.Sec(false))
 
 	a2, _ := new(big.Int).SetString("042f01e5e15cca351daff3843fb70f3c2f0a1bdd05e5af888a67784ef3e10a2a015c4da8a741539949293d082a132d13b4c2e213d6ba5b7617b5da2cb76cbde904", 16)
 	priv, _ = MakePrivateKeyFromBigInt(new(big.Int).Exp(big.NewInt(2018), big.NewInt(5), big.NewInt(10)))
-	c2 := new(big.Int).SetBytes(priv.Point.Sec())
+	c2 := new(big.Int).SetBytes(priv.Point.Sec(false))
 	if a2.Cmp(c2) != 0 {
 		t.Error("sec keys are not the same")
 	}
-	fmt.Printf("%x\n", priv.Point.Sec())
+	fmt.Printf("%x\n", priv.Point.Sec(false))
 }

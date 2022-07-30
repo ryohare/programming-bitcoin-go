@@ -138,12 +138,21 @@ func VerifySignature(pk PrivateKey, z *big.Int, sig *Signature) (bool, error) {
 	return sum.X.Num.Cmp(sig.R) == 0, nil
 }
 
-func (s S256Point) Sec() []byte {
+func (s S256Point) Sec(compressed bool) []byte {
 	buf := make([]byte, 0, 32)
 
-	buf = append(buf, 0x04)
-	buf = append(buf, s.Point.X.Num.Bytes()...)
-	buf = append(buf, s.Point.Y.Num.Bytes()...)
-
+	if compressed {
+		if new(big.Int).Mod(s.Point.Y.Num, big.NewInt(2)).Cmp(big.NewInt(0)) == 0 {
+			buf = append(buf, 0x02)
+			buf = append(buf, s.Point.X.Num.Bytes()...)
+		} else {
+			buf = append(buf, 0x03)
+			buf = append(buf, s.Point.X.Num.Bytes()...)
+		}
+	} else {
+		buf = append(buf, 0x04)
+		buf = append(buf, s.Point.X.Num.Bytes()...)
+		buf = append(buf, s.Point.Y.Num.Bytes()...)
+	}
 	return buf
 }
