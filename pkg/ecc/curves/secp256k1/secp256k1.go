@@ -26,7 +26,7 @@ type S256Point struct {
 func RMultiply(p S256Point, coefficient big.Int) (*S256Point, error) {
 	_c := new(big.Int).Set(&coefficient)
 	coef := _c.Mod(&coefficient, GetNonce())
-	point, err := point.RMultiply(p.Point, *coef)
+	point, err := point.RMultiply(*p.Point, *coef)
 
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func VerifySignature(pk PrivateKey, z *big.Int, sig *Signature) (bool, error) {
 	// verified
 	uG, _ := RMultiply(*G, *u)
 	vP, _ := RMultiply(*pk.Point, *v)
-	sum, err := point.Addition(uG.Point, vP.Point)
+	sum, err := point.Addition(*uG.Point, *vP.Point)
 
 	if err != nil {
 		return false, err
@@ -147,6 +147,8 @@ func VerifySignature(pk PrivateKey, z *big.Int, sig *Signature) (bool, error) {
 func (s S256Point) Sec(compressed bool) []byte {
 	buf := make([]byte, 0, 32)
 
+	fmt.Println(s.Point.Y.Num.String())
+	fmt.Println(s.Point.X.Num.String())
 	if compressed {
 		if new(big.Int).Mod(s.Point.Y.Num, big.NewInt(2)).Cmp(big.NewInt(0)) == 0 {
 			buf = append(buf, 0x02)

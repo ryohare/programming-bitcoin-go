@@ -28,7 +28,7 @@ func TestGetGeneratorPoint(t *testing.T) {
 	pi := GetGeneratorPoint()
 	n := GetNonce()
 
-	np, err := point.RMultiply(pi.Point, *n)
+	np, err := point.RMultiply(*pi.Point, *n)
 
 	if err != nil {
 		t.Errorf("failed to validate generator point because %s", err.Error())
@@ -67,7 +67,7 @@ func TestSigVerify(t *testing.T) {
 	// verified
 	uG, _ := RMultiply(*G, *u)
 	vP, _ := RMultiply(*p, *v)
-	sum, err := point.Addition(uG.Point, vP.Point)
+	sum, err := point.Addition(*uG.Point, *vP.Point)
 
 	if err != nil {
 		t.Errorf("failed addition because %s", err.Error())
@@ -158,17 +158,63 @@ func TestSec(t *testing.T) {
 	if a1.Cmp(c1) != 0 {
 		t.Error("sec keys are not the same")
 	}
-	fmt.Printf("%x\n", priv.Point.Sec(false))
+	// fmt.Printf("%x\n", priv.Point.Sec(false))
 
-	a2, _ := new(big.Int).SetString("042f01e5e15cca351daff3843fb70f3c2f0a1bdd05e5af888a67784ef3e10a2a015c4da8a741539949293d082a132d13b4c2e213d6ba5b7617b5da2cb76cbde904", 16)
-	priv, _ = MakePrivateKeyFromBigInt(new(big.Int).Exp(big.NewInt(2018), big.NewInt(5), big.NewInt(10)))
+	a2, _ := new(big.Int).SetString("04027f3da1918455e03c46f659266a1bb5204e959db7364d2f473bdf8f0a13cc9dff87647fd023c13b4a4994f17691895806e1b40b57f4fd22581a4f46851f3b06", 16)
+	priv, _ = MakePrivateKeyFromBigInt(new(big.Int).Exp(big.NewInt(2018), big.NewInt(5), nil))
 	c2 := new(big.Int).SetBytes(priv.Point.Sec(false))
 	if a2.Cmp(c2) != 0 {
 		t.Error("sec keys are not the same")
 	}
-	fmt.Printf("%x\n", priv.Point.Sec(false))
+	// fmt.Printf("%x\n", priv.Point.Sec(false))
 }
 
 func TestParse(t *testing.T) {
+	// 5,001
+	// 2,019^5^
+	// 0xdeadbeef54321
+	pn := big.NewInt(5001)
+	priv, err := MakePrivateKeyFromBigInt(pn)
 
+	if err != nil {
+		t.Errorf("failed to create private key because %s", err.Error())
+	}
+
+	a1, _ := new(big.Int).SetString("0357a4f368868a8a6d572991e484e664810ff14c05c0fa023275251151fe0e53d1", 16)
+	c1 := new(big.Int).SetBytes(priv.Point.Sec(true))
+	if c1.Cmp(a1) != 0 {
+		t.Error("compressed sec keys are not the same")
+	}
+
+	// 2019**5
+	pn = big.NewInt(2019)
+	pn = pn.Exp(pn, big.NewInt(5), nil)
+	// fmt.Println(pn.String())
+	priv, err = MakePrivateKeyFromBigInt(pn)
+	// fmt.Println(priv.Point.Point.X.Num.String())
+	if err != nil {
+		t.Errorf("failed to create private key because %s", err.Error())
+	}
+
+	a2, _ := new(big.Int).SetString("02933ec2d2b111b92737ec12f1c5d20f3233a0ad21cd8b36d0bca7a0cfa5cb8701", 16)
+	c2 := new(big.Int).SetBytes(priv.Point.Sec(true))
+	// fmt.Printf("%x\n", c2)
+
+	if c2.Cmp(a2) != 0 {
+		t.Error("compressed sec keys are not the same")
+	}
+
+	pn, _ = new(big.Int).SetString("deadbeef54321", 16)
+	priv, err = MakePrivateKeyFromBigInt(pn)
+
+	if err != nil {
+		t.Errorf("failed to create private key because %s", err.Error())
+	}
+
+	a3, _ := new(big.Int).SetString("0296be5b1292f6c856b3c5654e886fc13511462059089cdf9c479623bfcbe77690", 16)
+	c3 := new(big.Int).SetBytes(priv.Point.Sec(true))
+
+	if c3.Cmp(a3) != 0 {
+		t.Error("compressed sec keys are not the same")
+	}
 }

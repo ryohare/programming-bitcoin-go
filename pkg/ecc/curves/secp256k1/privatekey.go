@@ -15,7 +15,7 @@ type PrivateKey struct {
 
 func MakePrivateKeyFromBigInt(secret *big.Int) (*PrivateKey, error) {
 	pk := &PrivateKey{}
-
+	fmt.Println(secret.String())
 	var err error
 	pk.Point, err = RMultiply(*GetGeneratorPoint(), *secret)
 

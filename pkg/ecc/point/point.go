@@ -96,18 +96,18 @@ func Make(a, b, x, y *fe.FieldElement) (*Point, error) {
 		nil
 }
 
-func Equal(p1, p2 *Point) bool {
+func Equal(p1, p2 Point) bool {
 	if p1.A == p2.A && p1.B == p2.B && p1.X == p2.X && p1.Y == p2.Y {
 		return true
 	}
 	return false
 }
 
-func NotEqual(p1, p2 *Point) bool {
+func NotEqual(p1, p2 Point) bool {
 	return !Equal(p1, p2)
 }
 
-func Addition(p1, p2 *Point) (*Point, error) {
+func Addition(p1, p2 Point) (*Point, error) {
 
 	// make sure both points are on the same curve
 	if !fe.Equal(p1.A, p2.A) || !fe.Equal(p1.B, p2.B) {
@@ -116,10 +116,10 @@ func Addition(p1, p2 *Point) (*Point, error) {
 
 	// Case 0.0: self is the point at infinity, return other
 	if p1.X == nil {
-		return p2, nil
+		return &p2, nil
 	}
 	if p2.X == nil {
-		return p1, nil
+		return &p1, nil
 	}
 
 	// Case 1: self.x == other.x, self.y != other.y
@@ -269,9 +269,9 @@ func Addition(p1, p2 *Point) (*Point, error) {
 	return nil, fmt.Errorf("failed to find condition for addition")
 }
 
-func RMultiply(p1 *Point, coefficient big.Int) (*Point, error) {
+func RMultiply(p1 Point, coefficient big.Int) (*Point, error) {
 	coef := new(big.Int).Set(&coefficient)
-	current := p1
+	current := &p1
 	var err error
 	result := &Point{
 		p1.A,
@@ -290,12 +290,12 @@ func RMultiply(p1 *Point, coefficient big.Int) (*Point, error) {
 		// WTF - Why do i need to do an str compare here
 		// when i do big.int == big.int it doesnt work
 		if tmp.And(coef, big.NewInt(1)).String() == "1" {
-			result, err = Addition(result, current)
+			result, err = Addition(*result, *current)
 			if err != nil {
 				return nil, err
 			}
 		}
-		current, err = Addition(current, current)
+		current, err = Addition(*current, *current)
 		if err != nil {
 			return nil, err
 		}
