@@ -1,6 +1,7 @@
 package secp256k1
 
 import (
+	"fmt"
 	"math/big"
 
 	fe "github.com/ryohare/programming-bitcoin-go/pkg/ecc/fieldelement"
@@ -73,6 +74,11 @@ func GetGy() *big.Int {
 func GetPrime() *big.Int {
 	p, _ := new(big.Int).SetString(P, 10)
 	return p
+}
+
+func GetB() *big.Int {
+	b := big.NewInt(B)
+	return b
 }
 
 func GetGeneratorPoint() *S256Point {
@@ -155,4 +161,107 @@ func (s S256Point) Sec(compressed bool) []byte {
 		buf = append(buf, s.Point.Y.Num.Bytes()...)
 	}
 	return buf
+}
+
+func Sqrt(fe1 fe.FieldElement) (*fe.FieldElement, error) {
+	p1 := new(big.Int).Add(GetPrime(), big.NewInt(1))
+	p1 = p1.Div(p1, big.NewInt(4))
+
+	res, err := fe.RMultiply(&fe1, p1)
+
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(res.String())
+
+	return res, nil
+}
+
+func Parse(secBin []byte) (*S256Point, error) {
+	if len(secBin) < 1 {
+		return nil, fmt.Errorf("secBin is too short")
+	}
+	if secBin[0] == 0x04 {
+		x := new(big.Int).SetBytes(secBin[1:33])
+		y := new(big.Int).SetBytes(secBin[33:65])
+		return MakePoint(x, y), nil
+	}
+
+	isEven := secBin[0] == 0x02
+	x := &fe.FieldElement{Num: new(big.Int).SetBytes(secBin[1:]), Prime: GetPrime()}
+
+	// # right side of the equation y^2 = x^3 + 7
+	alpha, err := fe.Exponentiate(x, *big.NewInt(3))
+
+	if err != nil {
+		return nil, err
+	}
+
+	alpha, err = fe.Add(alpha, &fe.FieldElement{Num: GetB(), Prime: GetPrime()})
+
+	if err != nil {
+		return nil, err
+	}
+
+	beta, err := Sqrt(*alpha)
+
+	if err != nil {
+		return nil, err
+	}
+
+	p1 := new(big.Int).Sub(GetPrime(), beta.Num)
+	var evenBeta *fe.FieldElement
+	var oddBeta *fe.FieldElement
+	if new(big.Int).Mod(beta.Num, big.NewInt(2)).Cmp(big.NewInt(2)) == 0 {
+		evenBeta = beta
+		oddBeta = &fe.FieldElement{Num: p1, Prime: GetPrime()}
+	} else {
+		oddBeta = beta
+		evenBeta = &fe.FieldElement{Num: p1, Prime: GetPrime()}
+	}
+
+	if isEven {
+		return &S256Point{
+			Point: &point.Point{
+				A: &fe.FieldElement{
+					Num:   big.NewInt(0),
+					Prime: GetPrime(),
+				},
+				B: &fe.FieldElement{
+					Num:   big.NewInt(7),
+					Prime: GetPrime(),
+				},
+				X: &fe.FieldElement{
+					Num:   x.Num,
+					Prime: GetPrime(),
+				},
+				Y: &fe.FieldElement{
+					Num:   evenBeta.Num,
+					Prime: GetPrime(),
+				},
+			},
+		}, nil
+	} else {
+		return &S256Point{
+			Point: &point.Point{
+				A: &fe.FieldElement{
+					Num:   big.NewInt(0),
+					Prime: GetPrime(),
+				},
+				B: &fe.FieldElement{
+					Num:   big.NewInt(7),
+					Prime: GetPrime(),
+				},
+				X: &fe.FieldElement{
+					Num:   x.Num,
+					Prime: GetPrime(),
+				},
+				Y: &fe.FieldElement{
+					Num:   oddBeta.Num,
+					Prime: GetPrime(),
+				},
+			},
+		}, nil
+	}
 }

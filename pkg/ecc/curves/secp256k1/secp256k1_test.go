@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	fe "github.com/ryohare/programming-bitcoin-go/pkg/ecc/fieldelement"
 	point "github.com/ryohare/programming-bitcoin-go/pkg/ecc/point"
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
@@ -136,6 +137,20 @@ func TestGlobalSigVerify(t *testing.T) {
 
 }
 
+func TestSqrt(t *testing.T) {
+	f := fe.FieldElement{
+		Num:   big.NewInt(1000),
+		Prime: GetPrime(),
+	}
+	fe, err := Sqrt(f)
+
+	if err != nil {
+		t.Errorf("failed sqrt field element because %s", err)
+	}
+
+	fmt.Println(fe.Num.String())
+}
+
 func TestSec(t *testing.T) {
 	a1, _ := new(big.Int).SetString("04ffe558e388852f0120e46af2d1b370f85854a8eb0841811ece0e3e03d282d57c315dc72890a4f10a1481c031b03b351b0dc79901ca18a00cf009dbdb157a1d10", 16)
 	priv, _ := MakePrivateKeyFromBigInt(big.NewInt(5000))
@@ -152,4 +167,8 @@ func TestSec(t *testing.T) {
 		t.Error("sec keys are not the same")
 	}
 	fmt.Printf("%x\n", priv.Point.Sec(false))
+}
+
+func TestParse(t *testing.T) {
+
 }
