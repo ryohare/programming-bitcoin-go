@@ -6,6 +6,7 @@ import (
 
 	fe "github.com/ryohare/programming-bitcoin-go/pkg/ecc/fieldelement"
 	point "github.com/ryohare/programming-bitcoin-go/pkg/ecc/point"
+	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
 // Default vaules for the Secp256k1 Curve
@@ -266,4 +267,21 @@ func Parse(secBin []byte) (*S256Point, error) {
 			},
 		}, nil
 	}
+}
+
+func (s S256Point) Hash160(compressed bool) []byte {
+	return utils.Hash160(s.Sec(compressed))
+}
+
+func (s S256Point) Address(compressed, testnet bool) []byte {
+	h160 := s.Hash160(compressed)
+
+	prefix := make([]byte, 1)
+	if testnet {
+		prefix[0] = 0x6f
+	} else {
+		prefix[0] = 0x00
+	}
+
+	return append(prefix, h160...)
 }
