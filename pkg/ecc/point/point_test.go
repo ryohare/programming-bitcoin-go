@@ -116,7 +116,7 @@ func TestAddition(t *testing.T) {
 		Y: y8,
 	}
 
-	res, err := Addition(p1, p2)
+	res, err := Addition(*p1, *p2)
 
 	if err != nil {
 		t.Errorf("failed to add points %v and %v because %s", p1, p2, err.Error())
@@ -126,7 +126,7 @@ func TestAddition(t *testing.T) {
 		t.Errorf("failed to add points %v and %v", p1, p2)
 	}
 
-	res, err = Addition(p3, p4)
+	res, err = Addition(*p3, *p4)
 
 	if err != nil {
 		t.Errorf("failed to add points %v and %v because %s", p1, p2, err.Error())
@@ -136,7 +136,7 @@ func TestAddition(t *testing.T) {
 		t.Errorf("failed to add points %v and %v", p1, p2)
 	}
 
-	res, err = Addition(p5, p6)
+	res, err = Addition(*p5, *p6)
 
 	if err != nil {
 		t.Errorf("failed to add points %v and %v because %s", p1, p2, err.Error())
@@ -146,7 +146,7 @@ func TestAddition(t *testing.T) {
 		t.Errorf("failed to add points %v and %v", p1, p2)
 	}
 
-	res, err = Addition(p7, p8)
+	res, err = Addition(*p7, *p8)
 
 	if err != nil {
 		t.Errorf("failed to add points %v and %v because %s", p1, p2, err.Error())
@@ -170,20 +170,20 @@ func TestRMultiplication(t *testing.T) {
 		B: b,
 	}
 
-	res, _ := RMultiply(p1, *big.NewInt(1))
+	res, _ := RMultiply(*p1, *big.NewInt(1))
 
 	if res.X.Num.Cmp(big.NewInt(47)) != 0 && res.Y.Num.Cmp(big.NewInt(71)) != 0 {
 		t.Errorf("failed for point %s", res.String())
 	}
-	res, _ = RMultiply(p1, *big.NewInt(2))
+	res, _ = RMultiply(*p1, *big.NewInt(2))
 	if res.X.Num.Cmp(big.NewInt(36)) != 0 && res.Y.Num.Cmp(big.NewInt(111)) != 0 {
 		t.Errorf("failed for point %s", res.String())
 	}
-	res, _ = RMultiply(p1, *big.NewInt(8))
+	res, _ = RMultiply(*p1, *big.NewInt(8))
 	if res.X.Num.Cmp(big.NewInt(116)) != 0 && res.Y.Num.Cmp(big.NewInt(55)) != 0 {
 		t.Errorf("failed for point %s", res.String())
 	}
-	res, _ = RMultiply(p1, *big.NewInt(15))
+	res, _ = RMultiply(*p1, *big.NewInt(15))
 	if res.X.Num.Cmp(big.NewInt(139)) != 0 && res.Y.Num.Cmp(big.NewInt(86)) != 0 {
 		t.Errorf("failed for point %s", res.String())
 	}
