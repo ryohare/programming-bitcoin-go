@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const tx = `010000000456919960ac691763688d3d3bcea9ad6ecaf875df5339e
+const testTx = `010000000456919960ac691763688d3d3bcea9ad6ecaf875df5339e
 148a1fc61c6ed7a069e010000006a47304402204585bcdef85e6b1c6af5c2669d4830ff86e42dd
 205c0e089bc2a821657e951c002201024a10366077f87d6bce1f7100ad8cfa8a064b39d4e8fe4e
 a13a7b71aa8180f012102f0da57e85eec2934a82a585ea337ce2f4998b50ae699dd79f5880e253
@@ -25,7 +25,7 @@ b6dbf67d4750b0a56244948a87988ac005a6202000000001976a9143c82d7df364eb6c75be8c80
 df2b3eda8db57397088ac46430600`
 
 func TestParseTransaction(t *testing.T) {
-	tx, _ := new(big.Int).SetString(tx, 16)
+	tx, _ := new(big.Int).SetString(testTx, 16)
 
 	// version 1 in little endian
 	// b1, _ := new(big.Int).SetString("01000000", 16)
