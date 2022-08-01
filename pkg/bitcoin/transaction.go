@@ -10,6 +10,10 @@ import (
 type TransactionInput struct {
 }
 
+func (txIn TransactionInput) String() string {
+	return ""	
+}
+
 type TransactionOutput struct {
 }
 
@@ -20,6 +24,22 @@ type Transaction struct {
 	Locktime      int
 	Testnet       bool
 	Serialization []byte
+}
+
+func (t Transaction) String() string {
+	var txInStr string
+	for _,v := range(t.Inputs) {
+		txInStr = fmt.Sprintf("%s\n%s\n",txInStr, v.String())
+	}
+
+	var txOutStr string
+	for _,v := range(t.Outputs){
+		txOutStr = fmt.Sprintf("%s\n%s\n", txOutStr, v.String())
+	}
+
+	retStr = fmt.Sprintf("Tx: %s\nVersion: %d\n txIns:\n%stxOuts:\n%slocktime: %d", t.ID(), t.Version, txInStr, txOutStr, t.Locktime )
+
+	return retStr
 }
 
 func (t Transaction) Serialize() []byte {
