@@ -6,11 +6,14 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/big"
+
+	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
 type PrivateKey struct {
-	Secret string
-	Point  *S256Point
+	Secret       string
+	SecretBigInt *big.Int
+	Point        *S256Point
 }
 
 func MakePrivateKeyFromBigInt(secret *big.Int) (*PrivateKey, error) {
@@ -21,6 +24,10 @@ func MakePrivateKeyFromBigInt(secret *big.Int) (*PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// store the secret locally
+	pk.Secret = string(secret.Bytes())
+	pk.SecretBigInt = secret
 
 	return pk, nil
 }
@@ -190,4 +197,26 @@ func (pk PrivateKey) Sign(z *big.Int) (*Signature, error) {
 			S: s,
 		},
 		nil
+}
+
+func (p PrivateKey) Wif(compressed, testnet bool) []byte {
+	var prefix []byte
+	var suffix []byte
+	if testnet {
+		prefix = append(prefix, 0xef)
+	} else {
+		prefix = append(prefix, 0x80)
+	}
+	if compressed {
+		suffix = append(suffix, 0x01)
+	}
+
+	//prefix + secret + suffix
+	// secretBytes := make([]byte, 32)
+	var secretBytes []byte
+	secretBytes = append(secretBytes, p.GetSecretBytes()...)
+	s := append(prefix, secretBytes...)
+	s = append(s, suffix...)
+
+	return utils.EncodeBase58Checksum(s)
 }

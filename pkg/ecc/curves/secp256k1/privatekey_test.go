@@ -59,3 +59,31 @@ func TestGetDeterministsicK(t *testing.T) {
 
 	pk.GetDeterministsicK(big.NewInt(1000))
 }
+
+func TestWif(t *testing.T) {
+	n1 := big.NewInt(5003)
+	priv, _ := MakePrivateKeyFromBigInt(n1)
+	w := priv.Wif(true, true)
+
+	if string(w) != "cMahea7zqjxrtgAbB7LSGbcQUr1uX1ojuat9jZodMN8rFTv2sfUK" {
+		t.Error("wif format does not match expected version (1)")
+	}
+
+	// 2021^5 (uncompressed, testnet)
+	b2 := new(big.Int).Exp(big.NewInt(2021), big.NewInt(5), nil)
+	priv, _ = MakePrivateKeyFromBigInt(b2)
+	w = priv.Wif(false, true)
+
+	if string(w) != "91avARGdfge8E4tZfYLoxeJ5sGBdNJQH4kvjpWAxgzczjbCwxic" {
+		t.Error("wif format does not match expected version (2)")
+	}
+
+	// 0x54321deadbeef (compressed, mainnet)
+	b3, _ := new(big.Int).SetString("54321deadbeef", 16)
+	priv, _ = MakePrivateKeyFromBigInt(b3)
+	w = priv.Wif(true, false)
+
+	if string(w) != "KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgiuQJv1h8Ytr2S53a" {
+		t.Error("wif format does not match expected version (3)")
+	}
+}
