@@ -46,7 +46,7 @@ func EncodeBase58(s []byte) []byte {
 	var prefix []byte
 	var result []byte
 	for i := 0; i < count; i++ {
-		prefix = append(prefix, 0x01)
+		prefix = append(prefix, 1)
 	}
 
 	for {

@@ -274,14 +274,19 @@ func (s S256Point) Hash160(compressed bool) []byte {
 }
 
 func (s S256Point) Address(compressed, testnet bool) []byte {
+
+	fmt.Println(s.Point.X.String())
+	fmt.Println(s.Point.Y.String())
 	h160 := s.Hash160(compressed)
 
-	prefix := make([]byte, 1)
+	var prefix []byte
 	if testnet {
-		prefix[0] = 0x6f
+		prefix = append(prefix, 0x6f)
 	} else {
-		prefix[0] = 0x00
+		prefix = append(prefix, 0x00)
 	}
 
-	return append(prefix, h160...)
+	payload := append(prefix, h160...)
+
+	return utils.EncodeBase58Checksum(payload)
 }

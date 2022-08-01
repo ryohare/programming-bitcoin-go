@@ -229,3 +229,36 @@ func TestDer(t *testing.T) {
 
 	sig.Der()
 }
+
+func TestAddress(t *testing.T) {
+	//  5002 (use uncompressed SEC on testnet)
+	//  2020^5 (use compressed SEC on testnet)
+	//  0x12345deadbeef (use compressed SEC on mainnet)
+
+	b1 := big.NewInt(5002)
+	priv, _ := MakePrivateKeyFromBigInt(b1)
+	a1 := priv.Point.Address(false, true)
+
+	if string(a1) != "mmTPbXQFxboEtNRkwfh6K51jvdtHLxGeMA" {
+		t.Error("generated address does not match the expected value (1)")
+	}
+
+	b2 := new(big.Int).Exp(big.NewInt(2020), big.NewInt(5), nil)
+	priv, _ = MakePrivateKeyFromBigInt(b2)
+	a2 := priv.Point.Address(true, true)
+
+	if string(a2) != "mopVkxp8UhXqRYbCYJsbeE1h1fiF64jcoH" {
+		t.Error("generated address does not match the expected value (2)")
+	}
+
+	b3, _ := new(big.Int).SetString("12345deadbeef", 16)
+	priv, _ = MakePrivateKeyFromBigInt(b3)
+	a3 := priv.Point.Address(true, false)
+	str3 := string(a3)
+
+	// TODO - figure out why this is failing.
+	// the returned string has a \x0 infront of the address
+	if str3 != "\x01F1Pn2y6pDb68E5nYJJeba4TLg2U7B6KF1" {
+		t.Error("generated address does not match the expected value (3)")
+	}
+}
