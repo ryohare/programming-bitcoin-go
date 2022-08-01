@@ -1,7 +1,7 @@
 package bitcoin
 
 import (
-	"math/big"
+	"encoding/hex"
 	"testing"
 )
 
@@ -25,10 +25,11 @@ b6dbf67d4750b0a56244948a87988ac005a6202000000001976a9143c82d7df364eb6c75be8c80
 df2b3eda8db57397088ac46430600`
 
 func TestParseTransaction(t *testing.T) {
-	tx, _ := new(big.Int).SetString(testTx, 16)
+	tx, err := hex.DecodeString(testTx)
 
-	// version 1 in little endian
-	// b1, _ := new(big.Int).SetString("01000000", 16)
+	if err != nil {
+		t.Errorf("failed to parse testTx because %s", err.Error())
+	}
 
-	ParseTransaction(tx.Bytes())
+	ParseTransaction(tx)
 }

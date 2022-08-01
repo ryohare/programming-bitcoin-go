@@ -2,28 +2,35 @@ package bitcoin
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
-	"math/big"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
 type TransactionInput struct {
-	PrevTx    *TransactionInput
+	// 32 byte hash256 of previous previous transaction's contents
+	// little endian
+	PrevTx string
+
+	// 4 bytes little endian
 	PrevIndex int
+
 	ScriptSig *Script
-	Sequence  int
+
+	// 4 bytes little endian
+	Sequence int
 }
 
 func (txIn TransactionInput) String() string {
-	return fmt.Sprintf("%s:%d", txIn.PrevTx.Hex(), txIn.PrevIndex)
+	return fmt.Sprintf("%s:%d", txIn.PrevTx, txIn.PrevIndex)
 }
 
 func (txIn TransactionInput) Hex() string {
 	return ""
 }
 
-func MakeTransactionInput(prevTx *TransactionInput, prevIndex int, scriptSig *Script, sequence uint64) *TransactionInput {
+func MakeTransactionInput(prevTx string, prevIndex int, scriptSig *Script, sequence uint64) *TransactionInput {
 	if sequence == 0 {
 		sequence = 0xffffffff
 	}
@@ -51,6 +58,7 @@ func (txOut TransactionOutput) String() string {
 }
 
 type Transaction struct {
+	// 4 bytes little endian
 	Version       int
 	Inputs        []TransactionInput
 	Outputs       []TransactionOutput
@@ -91,14 +99,16 @@ func (t Transaction) ID() string {
 func ParseTransaction(serialization []byte) *Transaction {
 	t := &Transaction{}
 
+	// make a reader to easily read in the serialization
 	reader := bytes.NewReader(serialization)
 
+	//
+	// parse the version
+	//
 	version := make([]byte, 4)
 	reader.Read(version)
-
-	// version is stored little endian
-	beVersion := new(big.Int).SetBytes(utils.ReorderBytes(version))
-	t.Version = int(beVersion.Int64())
+	beVersion := binary.LittleEndian.Uint32(version)
+	t.Version = int(beVersion)
 
 	return t
 }
