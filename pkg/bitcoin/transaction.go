@@ -2,12 +2,17 @@ package bitcoin
 
 import (
 	"bytes"
-	
+
 	"math/big"
+
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
 type TransactionInput struct {
+	PrevTx    *TransactionInput
+	PrevIndex int
+	ScriptSig []byte
+	Sequence  int
 }
 
 func (txIn TransactionInput) String() string {
@@ -58,8 +63,8 @@ func (t Transaction) Hash() []byte {
 func (t Transaction) ID() string {
 	return string(t.Hash())
 }
-     
-func ParseTransaction(serialization []byte) *Transaction{
+
+func ParseTransaction(serialization []byte) *Transaction {
 	t := &Transaction{}
 
 	reader := bytes.NewReader(serialization)
