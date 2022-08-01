@@ -81,3 +81,25 @@ func EncodeBase58Checksum(b []byte) []byte {
 	buf := append(b, slice...)
 	return EncodeBase58(buf)
 }
+
+func ReorderBytes(b []byte) []byte {
+	for i := 0; i < len(b)/2; i++ {
+		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
+	}
+
+	return b
+}
+
+// Convert a byte array from little endian format to big endian int format
+// and return as type big.int
+func ConvertLittleEndianToBigInt(b []byte) *big.Int {
+	littleEndian := ReorderBytes(b)
+	n := new(big.Int).SetBytes(littleEndian)
+	return n
+}
+
+// Convert a big.Int into little endian by
+func ConvertIntToLittleEndian(i *big.Int) []byte {
+	b := ReorderBytes(i.Bytes())
+	return b
+}

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 )
@@ -44,4 +45,17 @@ func TestEncodeBase58(t *testing.T) {
 	if string(b3) != "EQJsjkd6JaGwxrjEhfeqPenqHwrBmPQZjJGNSCHBkcF7" {
 		t.Error("base58 encoding failed")
 	}
+}
+
+func TestCovertLittleEndian(t *testing.T) {
+	//0xdeadbeef
+	n, _ := new(big.Int).SetString("deadbeef", 16)
+	a := ConvertLittleEndianToBigInt(n.Bytes())
+	fmt.Println(a)
+}
+
+func TestConvertIntToLittleEndian(t *testing.T) {
+	val := big.NewInt(4022250974)
+	a := ConvertIntToLittleEndian(val)
+	fmt.Println(a)
 }
