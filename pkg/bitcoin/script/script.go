@@ -1,4 +1,4 @@
-package bitcoin
+package script
 
 import (
 	"bytes"
@@ -9,11 +9,11 @@ type Script struct {
 	RawScript []byte
 }
 
-func MakeScript() *Script {
+func Make() *Script {
 	return &Script{RawScript: []byte{0x00}}
 }
 
-func ParseScript(reader *bytes.Reader) *Script {
+func Parse(reader *bytes.Reader) *Script {
 	script := &Script{}
 
 	length, _ := binary.ReadUvarint(reader)
