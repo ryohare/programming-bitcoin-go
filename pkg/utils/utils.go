@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"math/big"
 
@@ -102,4 +104,28 @@ func ConvertLittleEndianToBigInt(b []byte) *big.Int {
 func ConvertIntToLittleEndian(i *big.Int) []byte {
 	b := ReorderBytes(i.Bytes())
 	return b
+}
+
+// Reads 4 bytes as a little endian variable integer and converts to a big endian integer
+func LittleEndianToVarInt(reader *bytes.Reader) int {
+	littleEndian := make([]byte, 4)
+	reader.Read(littleEndian)
+	bigEndian, _ := binary.ReadUvarint(bytes.NewReader(littleEndian))
+	return int(bigEndian)
+}
+
+// Reads 4 bytes as a little endian integer and converts to a big endian integer
+func LittleEndianToInt(reader *bytes.Reader) int {
+	littleEndian := make([]byte, 4)
+	reader.Read(littleEndian)
+	bigEndian := binary.LittleEndian.Uint32(littleEndian)
+	return int(bigEndian)
+}
+
+// Takes in a stream reader, reads in n bytes and reorders from
+// Little Endian to Big Endian.
+func LittleEndianToBigEndian(reader *bytes.Reader, length int) []byte {
+	littleEndian := make([]byte, length)
+	reader.Read(littleEndian)
+	return ReorderBytes(littleEndian)
 }

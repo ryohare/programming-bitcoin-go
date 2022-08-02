@@ -30,6 +30,24 @@ func (txIn TransactionInput) Hex() string {
 	return ""
 }
 
+func ParseInput(reader *bytes.Reader) *TransactionInput {
+	txIn := &TransactionInput{}
+
+	// read in prev_tx first
+	txIn.PrevTx = string(utils.LittleEndianToBigEndian(reader, 32))
+
+	// prev_index is next
+	txIn.PrevIndex = utils.LittleEndianToInt(reader)
+
+	// script_sig is next
+	txIn.ScriptSig = ParseScript(reader)
+
+	// sequence is next
+	txIn.Sequence = utils.LittleEndianToInt(reader)
+
+	return txIn
+}
+
 func MakeTransactionInput(prevTx string, prevIndex int, scriptSig *Script, sequence uint64) *TransactionInput {
 	if sequence == 0 {
 		sequence = 0xffffffff
@@ -60,8 +78,8 @@ func (txOut TransactionOutput) String() string {
 type Transaction struct {
 	// 4 bytes little endian
 	Version       int
-	Inputs        []TransactionInput
-	Outputs       []TransactionOutput
+	Inputs        []*TransactionInput
+	Outputs       []*TransactionOutput
 	Locktime      int
 	Testnet       bool
 	Serialization []byte
@@ -105,10 +123,18 @@ func ParseTransaction(serialization []byte) *Transaction {
 	//
 	// parse the version
 	//
-	version := make([]byte, 4)
-	reader.Read(version)
-	beVersion := binary.LittleEndian.Uint32(version)
-	t.Version = int(beVersion)
+	t.Version = utils.LittleEndianToInt(reader)
+
+	//
+	// Parse the inputs
+	//
+	// first is the varint for the length of the inputs
+	numOfInputs, _ := binary.ReadUvarint(reader)
+
+	for i := 0; i < int(numOfInputs); i++ {
+		ip := ParseInput(reader)
+		t.Inputs = append(t.Inputs, ip)
+	}
 
 	return t
 }
