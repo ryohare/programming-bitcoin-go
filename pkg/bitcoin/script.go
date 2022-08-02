@@ -22,5 +22,11 @@ func ParseScript(reader *bytes.Reader) *Script {
 	b := make([]byte, length)
 	reader.Read(b)
 
+	script.RawScript = b
+
 	return script
+}
+
+func (s Script) Serialize() []byte {
+	return s.RawScript
 }

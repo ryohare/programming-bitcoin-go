@@ -16,3 +16,16 @@ func TestParseTransaction(t *testing.T) {
 
 	ParseTransaction(tx)
 }
+
+func TestSerializeTransaction(t *testing.T) {
+	tx, err := hex.DecodeString(testTx)
+
+	if err != nil {
+		t.Errorf("failed to parse testTx because %s", err.Error())
+	}
+
+	serial := ParseTransaction(tx)
+
+	// re-serialize
+	serial.Serialize()
+}

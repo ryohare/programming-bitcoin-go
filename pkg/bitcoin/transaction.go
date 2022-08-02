@@ -11,7 +11,7 @@ import (
 type TransactionInput struct {
 	// 32 byte hash256 of previous previous transaction's contents
 	// little endian
-	PrevTx string
+	PrevTx []byte
 
 	// 4 bytes little endian
 	PrevIndex int
@@ -34,7 +34,7 @@ func ParseInput(reader *bytes.Reader) *TransactionInput {
 	txIn := &TransactionInput{}
 
 	// read in prev_tx first
-	txIn.PrevTx = string(utils.LittleEndianToBigEndian(reader, 32))
+	txIn.PrevTx = utils.LittleEndianToBigEndian(reader, 32)
 
 	// prev_index is next
 	txIn.PrevIndex = utils.LittleEndianToInt(reader)
@@ -48,7 +48,26 @@ func ParseInput(reader *bytes.Reader) *TransactionInput {
 	return txIn
 }
 
-func MakeTransactionInput(prevTx string, prevIndex int, scriptSig *Script, sequence uint64) *TransactionInput {
+// Returns the byte serialization of the transaction input
+func (txIn TransactionInput) Serialize() []byte {
+	// get the reversed byte order of the output hash for the input
+	var b []byte
+
+	b = append(b, utils.ReorderBytes(txIn.PrevTx)...)
+
+	// previous index converted from big endian to little endian
+	b = append(b, utils.IntToLittleEndianBytes(txIn.PrevIndex)...)
+
+	// script sig
+	b = append(b, txIn.ScriptSig.Serialize()...)
+
+	// sequence little endian
+	b = append(b, utils.IntToLittleEndianBytes(txIn.Sequence)...)
+
+	return b
+}
+
+func MakeTransactionInput(prevTx []byte, prevIndex int, scriptSig *Script, sequence uint64) *TransactionInput {
 	if sequence == 0 {
 		sequence = 0xffffffff
 	}
@@ -75,6 +94,16 @@ type TransactionOutput struct {
 
 func (txOut TransactionOutput) String() string {
 	return ""
+}
+
+// Returns the byte serialization of the transaction output
+func (txOut TransactionOutput) Serialize() []byte {
+	var b []byte
+
+	b = append(b, utils.UInt64ToLittleEndianBytes(txOut.Amount)...)
+	b = append(b, txOut.ScriptPubkey.Serialize()...)
+
+	return b
 }
 
 //Takes a byte stream and parses the tx_output at the start.
@@ -117,8 +146,22 @@ func (t Transaction) String() string {
 	return retStr
 }
 
+// Returns the byte serialization of the transaction
 func (t Transaction) Serialize() []byte {
-	return []byte{0x00}
+	var tx []byte
+
+	// serialize the version number first
+	tx = append(tx, utils.IntToLittleEndianBytes(t.Version)...)
+
+	// varint for the length of the inputs
+	tx = append(tx, utils.IntToVarintBytes(len(t.Inputs))...)
+
+	// serialize each of the inputs now
+	for _, v := range t.Inputs {
+		tx = append(tx, v.Serialize()...)
+	}
+
+	return tx
 }
 
 func (t Transaction) Hash() []byte {
@@ -165,6 +208,9 @@ func ParseTransaction(serialization []byte) *Transaction {
 		t.Outputs = append(t.Outputs, op)
 	}
 
+	//
+	// Parse the locktime
+	//
 	t.Locktime = utils.LittleEndianToInt(reader)
 
 	return t

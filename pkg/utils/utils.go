@@ -137,3 +137,25 @@ func LittleEndianToBigEndian(reader *bytes.Reader, length int) []byte {
 	reader.Read(littleEndian)
 	return ReorderBytes(littleEndian)
 }
+
+// Converts a big endian uint64 to a little endian byte array
+func UInt64ToLittleEndianBytes(n uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, n)
+	return b
+}
+
+// Converts a big endian int to a little endian byte array
+func IntToLittleEndianBytes(n int) []byte {
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, uint32(n))
+	return b
+}
+
+// Takes in an int and encodes it to a var int
+func IntToVarintBytes(v int) []byte {
+	buf := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutUvarint(buf, uint64(v))
+	b := buf[:n]
+	return b
+}
