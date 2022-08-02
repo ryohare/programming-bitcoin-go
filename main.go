@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/transaction"
+	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/transaction/tx"
 )
 
 func main() {
-	b := transaction.Transaction{}
+	b := tx.Transaction{}
 
 	fmt.Println(b)
 }
