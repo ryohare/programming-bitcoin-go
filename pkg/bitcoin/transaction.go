@@ -69,10 +69,26 @@ func MakeTransactionInput(prevTx string, prevIndex int, scriptSig *Script, seque
 }
 
 type TransactionOutput struct {
+	Amount       uint64
+	ScriptPubkey *Script
 }
 
 func (txOut TransactionOutput) String() string {
 	return ""
+}
+
+//Takes a byte stream and parses the tx_output at the start.
+// Returns a TxOut object.
+func ParseOutput(reader *bytes.Reader) *TransactionOutput {
+	txOut := &TransactionOutput{}
+
+	// read in the amount first
+	txOut.Amount = utils.LittleEndianToUInt64(reader)
+
+	// read in the script pub key next
+	txOut.ScriptPubkey = ParseScript(reader)
+
+	return txOut
 }
 
 type Transaction struct {
@@ -131,9 +147,22 @@ func ParseTransaction(serialization []byte) *Transaction {
 	// first is the varint for the length of the inputs
 	numOfInputs, _ := binary.ReadUvarint(reader)
 
+	// iterate over the inputs and append them to the inputs list
 	for i := 0; i < int(numOfInputs); i++ {
 		ip := ParseInput(reader)
 		t.Inputs = append(t.Inputs, ip)
+	}
+
+	//
+	// Parse the outputs
+	//
+	// first is the varint for the length fof the inputs
+	numOfOutputs, _ := binary.ReadUvarint(reader)
+
+	// iterate over the outputs and append them to the outputs list
+	for i := 0; i < int(numOfOutputs); i++ {
+		op := ParseOutput(reader)
+		t.Outputs = append(t.Outputs, op)
 	}
 
 	return t
