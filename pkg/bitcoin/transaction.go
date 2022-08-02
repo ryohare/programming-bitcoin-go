@@ -165,5 +165,7 @@ func ParseTransaction(serialization []byte) *Transaction {
 		t.Outputs = append(t.Outputs, op)
 	}
 
+	t.Locktime = utils.LittleEndianToInt(reader)
+
 	return t
 }
