@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/script"
-	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/txfetcher"
+	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/transaction/txfetcher"
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
