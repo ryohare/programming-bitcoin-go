@@ -5,9 +5,12 @@ import (
 	"fmt"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/script"
-	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/transaction/txfetcher"
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
+
+type Fetcher interface {
+	Fetch()
+}
 
 type TransactionInput struct {
 	// 32 byte hash256 of previous previous transaction's contents
@@ -30,9 +33,9 @@ func (txIn TransactionInput) Hex() string {
 	return ""
 }
 
-func (txIn TransactionInput) FetchTx(testnet bool) {
-	txfetcher.Fetch()
-}
+// func (txIn TransactionInput) FetchTx(testnet bool) {
+// 	txfetcher.Service.Fetch(txIn.PrevTx, testnet)
+// }
 
 func Parse(reader *bytes.Reader) *TransactionInput {
 	txIn := &TransactionInput{}
