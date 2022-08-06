@@ -33,9 +33,21 @@ func (txIn TransactionInput) Hex() string {
 	return ""
 }
 
-// func (txIn TransactionInput) FetchTx(testnet bool) {
-// 	txfetcher.Service.Fetch(txIn.PrevTx, testnet)
-// }
+func (txIn TransactionInput) FetchTx(testnet bool) (*Transaction, error) {
+	return TxFetcherSvc.Fetch(string(txIn.PrevTx), testnet, false)
+}
+
+// Get the output value by looking up the tx hash. Returns the amount in satoshi.
+func (txIn TransactionInput) Value(testnet bool) (int, error) {
+	tx, err := txIn.FetchTx(testnet)
+
+	if err != nil {
+		return -1, err
+	}
+
+	return int(tx.Outputs[txIn.PrevIndex].Amount), nil
+
+}
 
 func ParseTransactionInput(reader *bytes.Reader) *TransactionInput {
 	txIn := &TransactionInput{}
@@ -92,4 +104,15 @@ func MakeTransactionInput(prevTx []byte, prevIndex int, scriptSig *script.Script
 	}
 
 	return txIn
+}
+
+// Get the ScriptPubKey by looking up the tx hash. Returns a Script object.
+func (txIn TransactionInput) ScriptPubkey(testnet bool) (*script.Script, error) {
+	tx, err := txIn.FetchTx(testnet)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tx.Outputs[txIn.PrevIndex].ScriptPubkey, nil
 }

@@ -114,3 +114,19 @@ func ParseTransaction(serialization []byte) *Transaction {
 
 	return t
 }
+
+// Calculates the fee which should be used for a transaction
+func (t Transaction) Fee(testnet bool) uint64 {
+	var inputSum uint64
+	var outputSum uint64
+
+	for _, txIn := range t.Inputs {
+		val, _ := txIn.Value(testnet)
+		inputSum += uint64(val)
+	}
+	for _, txOut := range t.Outputs {
+		outputSum += txOut.Amount
+	}
+
+	return inputSum - outputSum
+}
