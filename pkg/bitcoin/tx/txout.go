@@ -1,4 +1,4 @@
-package txout
+package tx
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ func (txOut TransactionOutput) Serialize() []byte {
 
 //Takes a byte stream and parses the tx_output at the start.
 // Returns a TxOut object.
-func Parse(reader *bytes.Reader) *TransactionOutput {
+func ParseTransactionOutput(reader *bytes.Reader) *TransactionOutput {
 	txOut := &TransactionOutput{}
 
 	// read in the amount first

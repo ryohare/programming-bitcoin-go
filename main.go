@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/transaction/tx"
+	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/tx"
 )
 
 func main() {

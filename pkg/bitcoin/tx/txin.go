@@ -1,4 +1,4 @@
-package txin
+package tx
 
 import (
 	"bytes"
@@ -37,7 +37,7 @@ func (txIn TransactionInput) Hex() string {
 // 	txfetcher.Service.Fetch(txIn.PrevTx, testnet)
 // }
 
-func Parse(reader *bytes.Reader) *TransactionInput {
+func ParseTransactionInput(reader *bytes.Reader) *TransactionInput {
 	txIn := &TransactionInput{}
 
 	// read in prev_tx first

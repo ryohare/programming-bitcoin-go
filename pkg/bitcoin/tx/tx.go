@@ -5,17 +5,14 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/transaction/txin"
-	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/transaction/txout"
-
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
 type Transaction struct {
 	// 4 bytes little endian
 	Version       int
-	Inputs        []*txin.TransactionInput
-	Outputs       []*txout.TransactionOutput
+	Inputs        []*TransactionInput
+	Outputs       []*TransactionOutput
 	Locktime      int
 	Testnet       bool
 	Serialization []byte
@@ -94,7 +91,7 @@ func ParseTransaction(serialization []byte) *Transaction {
 
 	// iterate over the inputs and append them to the inputs list
 	for i := 0; i < int(numOfInputs); i++ {
-		ip := txin.Parse(reader)
+		ip := ParseTransactionInput(reader)
 		t.Inputs = append(t.Inputs, ip)
 	}
 
@@ -106,7 +103,7 @@ func ParseTransaction(serialization []byte) *Transaction {
 
 	// iterate over the outputs and append them to the outputs list
 	for i := 0; i < int(numOfOutputs); i++ {
-		op := txout.Parse(reader)
+		op := ParseTransactionOutput(reader)
 		t.Outputs = append(t.Outputs, op)
 	}
 
