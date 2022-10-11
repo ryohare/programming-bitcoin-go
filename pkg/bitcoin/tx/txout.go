@@ -2,6 +2,7 @@ package tx
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/script"
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
@@ -35,7 +36,12 @@ func ParseTransactionOutput(reader *bytes.Reader) *TransactionOutput {
 	txOut.Amount = utils.LittleEndianToUInt64(reader)
 
 	// read in the script pub key next
-	txOut.ScriptPubkey = script.Parse(reader)
+	var err error
+	txOut.ScriptPubkey, err = script.Parse(reader)
+
+	if err != nil {
+		fmt.Printf("Failed to parse the script pubkey because %v\n", err.Error())
+	}
 
 	return txOut
 }

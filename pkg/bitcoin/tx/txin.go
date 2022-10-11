@@ -59,7 +59,12 @@ func ParseTransactionInput(reader *bytes.Reader) *TransactionInput {
 	txIn.PrevIndex = utils.LittleEndianToInt(reader)
 
 	// script_sig is next
-	txIn.ScriptSig = script.Parse(reader)
+	var err error
+	txIn.ScriptSig, err = script.Parse(reader)
+
+	if err != nil {
+		fmt.Printf("Failed parse script sig because %v\n", err.Error())
+	}
 
 	// sequence is next
 	txIn.Sequence = utils.LittleEndianToInt(reader)
@@ -98,7 +103,7 @@ func MakeTransactionInput(prevTx []byte, prevIndex int, scriptSig *script.Script
 
 	// no script sig was passed, use basic script
 	if scriptSig == nil {
-		txIn.ScriptSig = script.Make()
+		txIn.ScriptSig = script.MakeScript()
 	} else {
 		txIn.ScriptSig = scriptSig
 	}
