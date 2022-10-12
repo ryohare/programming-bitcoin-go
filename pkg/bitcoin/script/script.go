@@ -8,9 +8,20 @@ import (
 	"io/ioutil"
 )
 
+type Command struct {
+	// raw bytes for the command
+	Bytes []byte
+
+	// flag to indicate if this is an opcode
+	OpCode bool
+}
+
 type Script struct {
+	// serialized byte array of the full script
 	RawScript []byte
-	Commands  [][]byte
+
+	// Each "command" (opcode or element) parsed
+	Commands []Command
 }
 
 func MakeScript() *Script {
@@ -38,7 +49,7 @@ func Parse(reader *bytes.Reader) (*Script, error) {
 	}
 
 	// commands array we will parse everyting into. Its an array of byte arrays
-	var commands [][]byte
+	var commands []Command
 
 	// init the numer of bytes being read to 0
 	count := uint64(0)
@@ -48,17 +59,22 @@ func Parse(reader *bytes.Reader) (*Script, error) {
 
 		// break condition is once all the bytes have been read
 		// count will == length.
-		// might need a saftefy valve here incase of a bad script
-		// otherwise this might loop for ever
 		if count >= length {
 			break
-		} else {
-			// safety valve.
-			// check if the stream is empty, if it is, break here
 		}
 
 		// read the first byte which determines if we have an opcode or an element
-		current, _ := reader.ReadByte()
+		current, err := reader.ReadByte()
+
+		if err != nil {
+			// break the loop if we run out of data to read regardless if we finished or not
+			// in a perfect world, we would have exited this at the first circuit breaker
+			// for the for loop, but this handles the case were the supplied data length does
+			// not match the actual length of the data.
+			if err == io.EOF {
+				break
+			}
+		}
 
 		// increment by 1 bytes that we read
 		count += 1
@@ -84,7 +100,13 @@ func Parse(reader *bytes.Reader) (*Script, error) {
 				fmt.Printf("Failed to read because %v\n", err.Error())
 			} else {
 				// append element to the list of commands (stack items)
-				commands = append(commands, cmd)
+				commands = append(
+					commands,
+					Command{
+						Bytes:  cmd,
+						OpCode: false,
+					},
+				)
 			}
 
 			count += elementLength
@@ -107,7 +129,13 @@ func Parse(reader *bytes.Reader) (*Script, error) {
 			} else {
 
 				// append the data element to the commands list
-				commands = append(commands, cmd)
+				commands = append(
+					commands,
+					Command{
+						Bytes:  cmd,
+						OpCode: false,
+					},
+				)
 			}
 
 			count += uint64(dataLength)
@@ -131,14 +159,26 @@ func Parse(reader *bytes.Reader) (*Script, error) {
 			} else {
 
 				// append the validated command
-				commands = append(commands, cmd)
+				commands = append(
+					commands,
+					Command{
+						Bytes:  cmd,
+						OpCode: false,
+					},
+				)
 			}
 			count += dataLength
 		} else {
 
 			// this indicates there is an opcode (single byte) which needs to be stored
 			opCode := currentByte
-			commands = append(commands, []byte{byte(opCode)})
+			commands = append(
+				commands,
+				Command{
+					Bytes:  []byte{byte(opCode)},
+					OpCode: true,
+				},
+			)
 		}
 	}
 
@@ -160,10 +200,11 @@ func (s Script) RawSerialize() ([]byte, error) {
 	var result []byte
 
 	// iterate over the commands
-	for _, v := range s.Commands {
+	for _, c := range s.Commands {
+		v := c.Bytes
 
 		// if the command is a single byte, then its the opcode
-		if len(v) == 1 {
+		if c.OpCode {
 			result = append(result, v[0])
 		} else {
 
