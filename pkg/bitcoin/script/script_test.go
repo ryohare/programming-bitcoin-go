@@ -66,3 +66,6 @@ func TestSeralize(t *testing.T) {
 		t.Fatalf("seralized script does not match oringal script")
 	}
 }
+
+func TestCombine(t *testing.T) {
+}

@@ -1,6 +1,7 @@
 package secp256k1
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -181,7 +182,7 @@ func Sqrt(fe1 fe.FieldElement) (*fe.FieldElement, error) {
 	return res, nil
 }
 
-func Parse(secBin []byte) (*S256Point, error) {
+func ParseSec(secBin []byte) (*S256Point, error) {
 	if len(secBin) < 1 {
 		return nil, fmt.Errorf("secBin is too short")
 	}
@@ -289,4 +290,48 @@ func (s S256Point) Address(compressed, testnet bool) []byte {
 	payload := append(prefix, h160...)
 
 	return utils.EncodeBase58Checksum(payload)
+}
+
+func MultMod(x, y, n *big.Int) *big.Int {
+	r := new(big.Int).Mul(x, y)
+	return r.Mod(r, n)
+}
+
+func (s *S256Point) Verify(z *big.Int, sig Signature) (bool, error) {
+	// Use fermats little theorem to get 1/s
+	nonceBytes, err := hex.DecodeString(N)
+	if err != nil {
+		return false, fmt.Errorf("failed to decode hex string for nounce (N)")
+	}
+	n := new(big.Int).SetBytes(nonceBytes)
+	sInv := new(big.Int).Exp(sig.S, n.Sub(n, big.NewInt(2)), n)
+
+	// u=z/s N is the group order number
+	u := new(big.Int).Mul(z, sInv)
+	u = u.Mod(u, n)
+
+	// v=r/s where N is the group order number
+	v := new(big.Int).Mul(sig.R, sInv)
+	v = v.Mod(v, n)
+
+	// u*G = v*P should be R
+	uG, err := RMultiply(*GetGeneratorPoint(), *u)
+
+	if err != nil {
+		return false, err
+	}
+	vP, err := RMultiply(*s, *v)
+	if err != nil {
+		return false, err
+	}
+	total, err := point.Addition(*uG.Point, *vP.Point)
+	if err != nil {
+		return false, err
+	}
+
+	if total.X.Num.Cmp(sig.R) == 0 {
+		return true, nil
+	}
+	return false, nil
+
 }
