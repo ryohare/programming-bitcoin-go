@@ -106,6 +106,8 @@ func TestCombine(t *testing.T) {
 	// 1: Sig
 	// 2: PubKey
 	// 3: 0xac 		// OP_CHECKSIG
-	combinedScript.Evaluate(new(big.Int).SetBytes(zBytes), 0, 0, 0)
+	if !combinedScript.Evaluate(new(big.Int).SetBytes(zBytes), 0, 0, 0) {
+		t.Fatalf("evaulate failed")
+	}
 
 }

@@ -267,7 +267,7 @@ func (s Script) Serialize() []byte {
 	return fullScript
 }
 
-func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) {
+func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) bool {
 
 	// Commands list will change so we need to make a local copy
 	cmds := s.Commands
@@ -275,178 +275,179 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) {
 	// executable stack to be created
 	var stack opcodes.Stack
 	var altStack opcodes.Stack
+	result := true
 
 	// range over the commands and process each command peice by peice
 	for _, c := range cmds {
 
+		if !result {
+			break
+		}
 		// check if the command is an opcode
 		if c.OpCode {
 			switch opCode := binary.BigEndian.Uint32(c.Bytes); opCode {
 			case opcodes.OP_0:
-				stack.Op0()
+				result = stack.Op0()
 			case opcodes.OP_PUSHDATA1:
 			case opcodes.OP_PUSHDATA2:
 			case opcodes.OP_PUSHDATA4:
 				break
 			case opcodes.OP_1NEGATE:
-				stack.Op1Negate()
+				result = stack.Op1Negate()
 			case opcodes.OP_1:
-				stack.Op1()
+				result = stack.Op1()
 			case opcodes.OP_2:
-				stack.Op2()
+				result = stack.Op2()
 			case opcodes.OP_3:
-				stack.Op3()
+				result = stack.Op3()
 			case opcodes.OP_4:
-				stack.Op4()
+				result = stack.Op4()
 			case opcodes.OP_5:
-				stack.Op5()
+				result = stack.Op5()
 			case opcodes.OP_6:
-				stack.Op6()
+				result = stack.Op6()
 			case opcodes.OP_7:
-				stack.Op7()
+				result = stack.Op7()
 			case opcodes.OP_8:
-				stack.Op8()
+				result = stack.Op8()
 			case opcodes.OP_9:
-				stack.Op9()
+				result = stack.Op9()
 			case opcodes.OP_10:
-				stack.Op10()
+				result = stack.Op10()
 			case opcodes.OP_11:
-				stack.Op11()
+				result = stack.Op11()
 			case opcodes.OP_12:
-				stack.Op12()
+				result = stack.Op12()
 			case opcodes.OP_13:
-				stack.Op13()
+				result = stack.Op13()
 			case opcodes.OP_14:
-				stack.Op14()
+				result = stack.Op14()
 			case opcodes.OP_15:
-				stack.Op15()
+				result = stack.Op15()
 			case opcodes.OP_16:
-				stack.Op16()
+				result = stack.Op16()
 			case opcodes.OP_NOP:
-				stack.OpNop()
+				result = stack.OpNop()
 			case opcodes.OP_IF:
 				fmt.Println("not implemented")
 			case opcodes.OP_NOTIF:
 				fmt.Println("not implemented")
-
 			case opcodes.OP_ELSE:
 				fmt.Println("not implemented")
-
 			case opcodes.OP_ENDIF:
 				fmt.Println("not implemented")
-
 			case opcodes.OP_VERIFY:
-				stack.OpVerify()
+				result = stack.OpVerify()
 			case opcodes.OP_RETURN:
-				stack.OpReturn()
+				result = stack.OpReturn()
 			case opcodes.OP_TOALTSTACK:
-				stack.OpToAltStack(altStack)
+				result = stack.OpToAltStack(altStack)
 			case opcodes.OP_FROMALTSTACK:
-				stack.OpFromAltStack(altStack)
+				result = stack.OpFromAltStack(altStack)
 			case opcodes.OP_2DROP:
-				stack.Op2Drop()
+				result = stack.Op2Drop()
 			case opcodes.OP_2DUP:
-				stack.Op2Dup()
+				result = stack.Op2Dup()
 			case opcodes.OP_3DUP:
-				stack.Op3Dup()
+				result = stack.Op3Dup()
 			case opcodes.OP_2OVER:
-				stack.Op2Over()
+				result = stack.Op2Over()
 			case opcodes.OP_2ROT:
-				stack.Op2Rot()
+				result = stack.Op2Rot()
 			case opcodes.OP_2SWAP:
-				stack.Op2Swap()
+				result = stack.Op2Swap()
 			case opcodes.OP_IFDUP:
-				stack.OpIfDup()
+				result = stack.OpIfDup()
 			case opcodes.OP_DEPTH:
-				stack.OpDepth()
+				result = stack.OpDepth()
 			case opcodes.OP_DROP:
-				stack.OpDrop()
+				result = stack.OpDrop()
 			case opcodes.OP_DUP:
-				stack.OpDup()
+				result = stack.OpDup()
 			case opcodes.OP_NIP:
-				stack.OpNip()
+				result = stack.OpNip()
 			case opcodes.OP_OVER:
-				stack.OpOver()
+				result = stack.OpOver()
 			case opcodes.OP_PICK:
-				stack.OpPick()
+				result = stack.OpPick()
 			case opcodes.OP_ROLL:
-				stack.OpRoll()
+				result = stack.OpRoll()
 			case opcodes.OP_ROT:
-				stack.OpRot()
+				result = stack.OpRot()
 			case opcodes.OP_SWAP:
-				stack.OpSwap()
+				result = stack.OpSwap()
 			case opcodes.OP_TUCK:
-				stack.OpTuck()
+				result = stack.OpTuck()
 			case opcodes.OP_SIZE:
-				stack.OpSize()
+				result = stack.OpSize()
 			case opcodes.OP_EQUAL:
-				stack.OpEqual()
+				result = stack.OpEqual()
 			case opcodes.OP_EQUALVERIFY:
-				stack.OpEqualVerify()
+				result = stack.OpEqualVerify()
 			case opcodes.OP_1ADD:
-				stack.Op1Add()
+				result = stack.Op1Add()
 			case opcodes.OP_1SUB:
-				stack.Op1Sub()
+				result = stack.Op1Sub()
 			case opcodes.OP_NEGATE:
-				stack.OpNegate()
+				result = stack.OpNegate()
 			case opcodes.OP_ABS:
-				stack.OpAbs()
+				result = stack.OpAbs()
 			case opcodes.OP_NOT:
-				stack.OpNot()
+				result = stack.OpNot()
 			case opcodes.OP_0NOTEQUAL:
-				stack.Op0NotEqual()
+				result = stack.Op0NotEqual()
 			case opcodes.OP_ADD:
-				stack.OpAdd()
+				result = stack.OpAdd()
 			case opcodes.OP_SUB:
-				stack.OpSub()
+				result = stack.OpSub()
 			case opcodes.OP_BOOLAND:
-				stack.OpBoolAnd()
+				result = stack.OpBoolAnd()
 			case opcodes.OP_BOOLOR:
-				stack.OpBoolOr()
+				result = stack.OpBoolOr()
 			case opcodes.OP_NUMEQUAL:
-				stack.OpNumEqual()
+				result = stack.OpNumEqual()
 			case opcodes.OP_NUMEQUALVERIFY:
-				stack.OpNumEqualVerify()
+				result = stack.OpNumEqualVerify()
 			case opcodes.OP_NUMNOTEQUAL:
-				stack.OpNumNotEqual()
+				result = stack.OpNumNotEqual()
 			case opcodes.OP_LESSTHAN:
-				stack.OpLessThan()
+				result = stack.OpLessThan()
 			case opcodes.OP_GREATERTHAN:
-				stack.OpGreaterThan()
+				result = stack.OpGreaterThan()
 			case opcodes.OP_LESSTHANOREQUAL:
-				stack.OpLessOrEqualThan()
+				result = stack.OpLessOrEqualThan()
 			case opcodes.OP_GREATERTHANOREQUAL:
-				stack.OpGreaterOrEqualThan()
+				result = stack.OpGreaterOrEqualThan()
 			case opcodes.OP_MIN:
-				stack.OpMin()
+				result = stack.OpMin()
 			case opcodes.OP_MAX:
-				stack.OpMax()
+				result = stack.OpMax()
 			case opcodes.OP_WITHIN:
-				stack.OpWithIn()
+				result = stack.OpWithIn()
 			case opcodes.OP_RIPEMD160:
-				stack.OpRipeMd160()
+				result = stack.OpRipeMd160()
 			case opcodes.OP_SHA1:
-				stack.OpSha1()
+				result = stack.OpSha1()
 			case opcodes.OP_SHA256:
-				stack.OpSha256()
+				result = stack.OpSha256()
 			case opcodes.OP_HASH160:
-				stack.OpHash160()
+				result = stack.OpHash160()
 			case opcodes.OP_HASH256:
-				stack.OpHash256()
+				result = stack.OpHash256()
 			case opcodes.OP_CODESEPARATOR:
 				break
 			case opcodes.OP_CHECKSIG:
-				stack.OpCheckSig(z)
+				result = stack.OpCheckSig(z)
 			case opcodes.OP_CHECKSIGVERIFY:
-				stack.OpCheckSigVerify(z)
+				result = stack.OpCheckSigVerify(z)
 			case opcodes.OP_CHECKMULTISIG:
-				stack.OpCheckMultisig(z)
+				result = stack.OpCheckMultisig(z)
 			case opcodes.OP_CHECKMULTISIGVERIFY:
-				stack.OpCheckMultisigVerify(z)
+				result = stack.OpCheckMultisigVerify(z)
 			case opcodes.OP_CHECKLOCKTIMEVERIFY:
-				stack.OpCheckTimeLockVerify(locktime, sequence)
+				result = stack.OpCheckTimeLockVerify(locktime, sequence)
 			case opcodes.OP_CHECKSEQUENCEVERIFY:
-				stack.OpCheckSequenceVerify(version, sequence)
+				result = stack.OpCheckSequenceVerify(version, sequence)
 			case opcodes.OP_NOP1:
 			case opcodes.OP_NOP4:
 			case opcodes.OP_NOP5:
@@ -462,4 +463,5 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) {
 			stack.Push(c.Bytes)
 		}
 	}
+	return result
 }
