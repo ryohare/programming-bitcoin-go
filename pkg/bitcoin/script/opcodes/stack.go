@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"math/big"
 
@@ -13,7 +14,8 @@ import (
 )
 
 type StackElement struct {
-	Bytes []byte
+	Bytes  []byte
+	OpCode bool
 }
 
 type Stack struct {
@@ -113,8 +115,14 @@ func decode(element []byte) int {
 	}
 }
 
+// Push in a raw byte array as a stack element
 func (s *Stack) Push(b []byte) {
 	s.Elements = append(s.Elements, StackElement{Bytes: b})
+}
+
+// Push in a raw byte array and flag as an opcode
+func (s *Stack) PushOp(b []byte) {
+	s.Elements = append(s.Elements, StackElement{Bytes: b, OpCode: true})
 }
 
 // Pops to top stack item
@@ -243,24 +251,138 @@ func (s *Stack) OpNop() bool {
 	return true
 }
 
-// func (s *Stack) OpIf() bool {
-// 	if len(s.Elements) < 1 {
-// 		return false
-// 	}
+func (s *Stack) Length() int {
+	return len(s.Elements)
+}
 
-// 	// go through the
-// 	var trueItems []StackElement
-// 	var falseItems [] StackElement
-// 	currentArray := trueItems
-// 	found := false
-// 	numEndifsNeeded = 1
+// If the top stack value is not False, the statements are executed. The top stack value is removed.
+func (s *Stack) OpIf(cmds *Stack) bool {
+	if len(s.Elements) < 1 {
+		return false
+	}
 
-// 	for _,item := range {
-// 		if
-// 	}
-// }
+	// go through
+	var trueItems []StackElement
+	var falseItems []StackElement
+	currentArray := trueItems
+	found := false
+	numEndIfsNeeded := 1
 
-// func (s* Stack) OfNotIf() bool {}
+	// iterate of the the commands stack
+	for i := 0; i < cmds.Length(); i++ {
+
+		// get the top item of the existing stack
+		cmd := cmds.Pop()
+
+		// check the opcode of the cmd
+		if cmd.OpCode {
+			// This is an op code, check if its additional control flow commands
+			opCode := binary.BigEndian.Uint32(cmd.Bytes)
+			if opCode == 99 || opCode == 100 {
+				// if and not if op codes
+				numEndIfsNeeded += 1
+				currentArray = append(currentArray, StackElement{Bytes: cmd.Bytes, OpCode: cmd.OpCode})
+			} else if numEndIfsNeeded == 1 && opCode == 103 {
+				// else op code
+				currentArray = falseItems
+			} else if opCode == 104 {
+				// end if op code
+				if numEndIfsNeeded == 1 {
+					// found the match, time to abort this shit
+					found = true
+					break
+				} else {
+					// decrement the counter as we closed out one if statement
+					numEndIfsNeeded -= 1
+					currentArray = append(currentArray, cmd)
+				}
+			} else {
+				// still looking, save the progress so far
+				currentArray = append(currentArray, cmd)
+			}
+		}
+	}
+	if !found {
+		// indicates we have a mismatched if/else block
+		return false
+	}
+	// we pop off the if statement since we paired it with a closure
+	element := s.Pop()
+
+	// check if the stack is 0, indicating false was evaluated of
+	// the if statement and assign it to the cmds overwriting the
+	// the passed in stacks elements. Otherwise set it to the true branch
+	if decode(element.Bytes) == 0 {
+		cmds.Elements = falseItems
+	} else {
+		cmds.Elements = trueItems
+	}
+	return true
+}
+
+func (s *Stack) OpNotIf(cmds *Stack) bool {
+	if len(s.Elements) < 1 {
+		return false
+	}
+
+	// go through
+	var trueItems []StackElement
+	var falseItems []StackElement
+	currentArray := trueItems
+	found := false
+	numEndIfsNeeded := 1
+
+	// iterate of the the commands stack
+	for i := 0; i < cmds.Length(); i++ {
+
+		// get the top item of the existing stack
+		cmd := cmds.Pop()
+
+		// check the opcode of the cmd
+		if cmd.OpCode {
+			// This is an op code, check if its additional control flow commands
+			opCode := binary.BigEndian.Uint32(cmd.Bytes)
+			if opCode == 99 || opCode == 100 {
+				// if and not if op codes
+				numEndIfsNeeded += 1
+				currentArray = append(currentArray, StackElement{Bytes: cmd.Bytes, OpCode: cmd.OpCode})
+			} else if numEndIfsNeeded == 1 && opCode == 103 {
+				// else op code
+				currentArray = falseItems
+			} else if opCode == 104 {
+				// end if op code
+				if numEndIfsNeeded == 1 {
+					// found the match, time to abort this shit
+					found = true
+					break
+				} else {
+					// decrement the counter as we closed out one if statement
+					numEndIfsNeeded -= 1
+					currentArray = append(currentArray, cmd)
+				}
+			} else {
+				// still looking, save the progress so far
+				currentArray = append(currentArray, cmd)
+			}
+		}
+	}
+	if !found {
+		// indicates we have a mismatched if/else block
+		return false
+	}
+	// we pop off the if statement since we paired it with a closure
+	element := s.Pop()
+
+	// check if the stack is 0, indicating false was evaluated of
+	// the if statement and assign it to the cmds overwriting the
+	// the passed in stacks elements. Otherwise set it to the true branch
+	if decode(element.Bytes) == 0 {
+		cmds.Elements = trueItems
+	} else {
+		cmds.Elements = falseItems
+	}
+	return true
+}
 
 func (s *Stack) OpVerify() bool {
 	if len(s.Elements) < 1 {

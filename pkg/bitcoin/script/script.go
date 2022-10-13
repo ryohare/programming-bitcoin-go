@@ -160,7 +160,6 @@ func Parse(reader *bytes.Reader) (*Script, error) {
 			cmd, err := ioutil.ReadAll(lr)
 
 			if err != nil {
-
 				// on error dont append any new command
 				fmt.Printf("Failed to read because %v\n", err.Error())
 			} else {
@@ -250,6 +249,23 @@ func (s Script) RawSerialize() ([]byte, error) {
 	return result, nil
 }
 
+// conditions (ifs) require the commands array, but
+// the stack its a layer below so we need repackage
+// the commands as the raw byte arrays to make it
+// something the dump stack layer understands
+func makeBinaryCommands(cmds []Command) *opcodes.Stack {
+	// b := make([]byte, len(cmds))
+	// for _, c := range cmds {
+	// 	b = append(b, c.Bytes...)
+	// }
+	// return b
+	stack := &opcodes.Stack{}
+	for _, c := range cmds {
+		stack.Push(c.Bytes)
+	}
+	return stack
+}
+
 // Returns a serialized byte array containing the script
 func (s Script) Serialize() []byte {
 
@@ -278,7 +294,7 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) bool {
 	result := true
 
 	// range over the commands and process each command peice by peice
-	for _, c := range cmds {
+	for i, c := range cmds {
 
 		if !result {
 			break
@@ -329,13 +345,21 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) bool {
 			case opcodes.OP_NOP:
 				result = stack.OpNop()
 			case opcodes.OP_IF:
-				fmt.Println("not implemented")
+				// conditions (ifs) require the commands array, but
+				// the stack its a layer below so we need repackage
+				// the commands as the raw byte arrays to make it
+				// something the dump stack layer understands
+				result = stack.OpIf(makeBinaryCommands(cmds[i : len(cmds)-1]))
 			case opcodes.OP_NOTIF:
-				fmt.Println("not implemented")
+				// same as above
+				result = stack.OpNotIf(makeBinaryCommands(cmds[i : len(cmds)-1]))
 			case opcodes.OP_ELSE:
-				fmt.Println("not implemented")
+				// this is handled during and op if we find this out here, something
+				// fucked up and we need to get out
+				result = false
 			case opcodes.OP_ENDIF:
-				fmt.Println("not implemented")
+				// same as above
+				result = false
 			case opcodes.OP_VERIFY:
 				result = stack.OpVerify()
 			case opcodes.OP_RETURN:
@@ -459,7 +483,7 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) bool {
 				break
 			}
 		} else {
-			// Tsaaasasahe selement is not an op code and is thus a data element
+			// is not an op code and is thus a data element
 			stack.Push(c.Bytes)
 		}
 	}
