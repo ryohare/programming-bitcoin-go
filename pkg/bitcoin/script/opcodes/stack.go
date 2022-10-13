@@ -61,7 +61,7 @@ func encode(num int) []byte {
 	// if the top bit is set,
 	// for negative numbers we ensure that the top bit is set
 	// for positive numbers we ensure that the top bit is not set
-	res := result[len(result)] & 0x80
+	res := result[len(result)-1] & 0x80
 	if res > 0 {
 		if negative {
 			result = append(result, 0x80)
@@ -898,6 +898,9 @@ func (s *Stack) OpCheckSig(z *big.Int) bool {
 	// get the signature in der formation
 	derSignature := s.Pop()
 
+	// shave off the SIGHASH flag
+	derSignature.Bytes = derSignature.Bytes[:len(derSignature.Bytes)-1]
+
 	// using ECC lib, verify the sec pubkey and the associated der signature
 	point, err := S256.ParseSec(secPubKey.Bytes)
 	if err != nil {
@@ -912,9 +915,10 @@ func (s *Stack) OpCheckSig(z *big.Int) bool {
 
 	// With the secPubKey and the Der signature, we can verify that point, z,
 	// is on the curve and ready to go
-	result, err := point.Verify(z, *sig)
+	result, err := point.Verify(*z, *sig)
 	if err != nil {
 		fmt.Printf("failed to verify point because %s\n", err.Error())
+		return false
 	}
 
 	if result {
@@ -1004,9 +1008,9 @@ func (s *Stack) OpCheckMultisig(z *big.Int) bool {
 			}
 
 			// try and verify the signature
-			result, err := p.Verify(z, *sig)
+			result, err := p.Verify(*z, *sig)
 			if err != nil {
-				fmt.Print("failed verification of der signature because %s\n", err.Error())
+				fmt.Printf("failed verification of der signature because %s\n", err.Error())
 				return false
 			}
 

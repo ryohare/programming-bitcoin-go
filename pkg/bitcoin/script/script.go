@@ -35,10 +35,10 @@ func MakeScript() *Script {
 }
 
 // Combine a scriptSig with a scriptPubKey resulting in a new script with both elements
-func Combine(scriptSig, scriptPubKey Script) *Script {
+func Combine(scriptPubkey, scriptSig Script) *Script {
 	// create a new command list
 	cmds := scriptSig.Commands
-	cmds = append(cmds, scriptPubKey.Commands...)
+	cmds = append(cmds, scriptPubkey.Commands...)
 
 	return &Script{
 		Commands: cmds,
@@ -287,7 +287,6 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) {
 			case opcodes.OP_PUSHDATA1:
 			case opcodes.OP_PUSHDATA2:
 			case opcodes.OP_PUSHDATA4:
-				fmt.Println("not implemented")
 				break
 			case opcodes.OP_1NEGATE:
 				stack.Op1Negate()
@@ -437,7 +436,6 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) {
 			case opcodes.OP_CODESEPARATOR:
 				break
 			case opcodes.OP_CHECKSIG:
-
 				stack.OpCheckSig(z)
 			case opcodes.OP_CHECKSIGVERIFY:
 				stack.OpCheckSigVerify(z)

@@ -1,7 +1,6 @@
 package secp256k1
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -297,29 +296,24 @@ func MultMod(x, y, n *big.Int) *big.Int {
 	return r.Mod(r, n)
 }
 
-func (s *S256Point) Verify(z *big.Int, sig Signature) (bool, error) {
+func (s *S256Point) Verify(z big.Int, sig Signature) (bool, error) {
 	// Use fermats little theorem to get 1/s
-	nonceBytes, err := hex.DecodeString(N)
-	if err != nil {
-		return false, fmt.Errorf("failed to decode hex string for nounce (N)")
-	}
-	n := new(big.Int).SetBytes(nonceBytes)
-	sInv := new(big.Int).Exp(sig.S, n.Sub(n, big.NewInt(2)), n)
+	sInv := new(big.Int).Exp(sig.S, new(big.Int).Sub(GetNonce(), big.NewInt(2)), GetNonce())
 
 	// u=z/s N is the group order number
-	u := new(big.Int).Mul(z, sInv)
-	u = u.Mod(u, n)
+	u := new(big.Int).Mul(&z, sInv)
+	u = u.Mod(u, GetNonce())
 
 	// v=r/s where N is the group order number
 	v := new(big.Int).Mul(sig.R, sInv)
-	v = v.Mod(v, n)
+	v = v.Mod(v, GetNonce())
 
 	// u*G = v*P should be R
 	uG, err := RMultiply(*GetGeneratorPoint(), *u)
-
 	if err != nil {
 		return false, err
 	}
+
 	vP, err := RMultiply(*s, *v)
 	if err != nil {
 		return false, err
@@ -329,6 +323,7 @@ func (s *S256Point) Verify(z *big.Int, sig Signature) (bool, error) {
 		return false, err
 	}
 
+	// check that the mapped x coordinate is in fact R
 	if total.X.Num.Cmp(sig.R) == 0 {
 		return true, nil
 	}
