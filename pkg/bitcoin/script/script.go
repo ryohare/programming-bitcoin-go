@@ -489,3 +489,57 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) bool {
 	}
 	return result
 }
+
+// Checks if the pubkey for the script is a P2PKH
+func (s Script) IsP2pkhScriptPubkey() bool {
+	// this will check if the list of commands held by the script
+	// match those for a P2PKH. This should be exactly 5 instructions
+	// OP_DUP
+	// OP_HASH160
+	// Script Pubkey
+	// OP_EQUALVERIFY
+	// OP_CHECKSIG
+
+	if len(s.Commands) != 5 {
+		return false
+	}
+	if s.Commands[0].Bytes[0] != byte(opcodes.OP_DUP) {
+		return false
+	}
+	if s.Commands[1].Bytes[0] != byte(opcodes.OP_HASH160) {
+		return false
+	}
+	if len(s.Commands[2].Bytes) != 20 {
+		return false
+	}
+	if s.Commands[3].Bytes[0] != byte(opcodes.OP_EQUALVERIFY) {
+		return false
+	}
+	if s.Commands[4].Bytes[0] != byte(opcodes.OP_CHECKSIG) {
+		return false
+	}
+	return true
+}
+
+// Checks if the pubkey for the script is P2SH
+func (s Script) IsP2shScriptPubkey() bool {
+	// This will check if the list of commands helpd by the script
+	// match those for a P2SH. Thias should be exactly 3 commands
+	// OP_HASH160
+	// Script Pubkey
+	// OP_EQAL
+
+	if len(s.Commands) != 3 {
+		return false
+	}
+	if s.Commands[0].Bytes[0] != byte(opcodes.OP_HASH160) {
+		return false
+	}
+	if len(s.Commands[1].Bytes) != 20 {
+		return false
+	}
+	if s.Commands[2].Bytes[0] != byte(opcodes.OP_EQUAL) {
+		return false
+	}
+	return true
+}

@@ -29,3 +29,7 @@ func TestSerializeTransaction(t *testing.T) {
 	// re-serialize
 	serial.Serialize()
 }
+
+func TestSigHash(t *testing.T) {
+
+}
