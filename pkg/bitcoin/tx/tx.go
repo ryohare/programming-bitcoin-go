@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/script"
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
@@ -141,7 +142,7 @@ func (t Transaction) Fee(testnet bool) uint64 {
 }
 
 // Get the signature hash of the transaction.
-func (t Transaction) SigHash(inputIndex int, sigHash uint32) (*big.Int, error) {
+func (t Transaction) SigHash(inputIndex int, redeemScript *script.Script, sigHash uint32) (*big.Int, error) {
 	// start with getting the version from the transaction
 	// it is the first element of the serialization stored
 	// in little endian formant. For memory allocation, using
@@ -170,16 +171,28 @@ func (t Transaction) SigHash(inputIndex int, sigHash uint32) (*big.Int, error) {
 		// script sig "unlock" the funds
 		if i == inputIndex {
 			// Create a TxIn with the correct script pub key
-			scriptPubKey, err := txIn.ScriptPubkey(false)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse script pubkey")
-			}
+
 			signedTxIn := &TransactionInput{
 				PrevTx:    txIn.PrevTx,
 				PrevIndex: txIn.PrevIndex,
-				ScriptSig: scriptPubKey,
+				ScriptSig: nil,
 				Sequence:  txIn.Sequence,
 			}
+
+			// If a redeem script is provided, this is a P2SH transaction
+			// and we should use the redeem script as the script sig.
+			// otherwise, it is a P2PKH and we use the scriptPunkey
+			// as the redeem script
+			if redeemScript != nil {
+				signedTxIn.ScriptSig = redeemScript
+			} else {
+				scriptPubKey, err := txIn.ScriptPubkey(false)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse script pubkey")
+				}
+				signedTxIn.ScriptSig = scriptPubKey
+			}
+
 			signedTxInBytes := signedTxIn.Serialize()
 			s = append(s, signedTxInBytes...)
 		} else {
@@ -237,7 +250,44 @@ func (t Transaction) VerifyInput(inputIndex int) (bool, error) {
 	scriptPubkey, err := txIn.ScriptPubkey(t.Testnet)
 
 	if err != nil {
-		return nil, err
+		return false, err
 	}
+
+	// check the pubkey type. If it is a P2SH, we need to create
+	// the redeem script to spend the funds
+	var redeemScript *script.Script
+	if scriptPubkey.IsP2shScriptPubkey() {
+		// Get the redeem script off the input, which is the last element
+		cmd := txIn.ScriptSig.Commands[len(txIn.ScriptSig.Commands)-1]
+
+		// Scripts always start with the length of the script, so add in the length
+		// of the script so we can parse it correctly
+		redeemScriptLenBytes := make([]byte, 8)
+		binary.BigEndian.PutUint32(redeemScriptLenBytes, uint32(len(cmd.Bytes)))
+		redeemScriptBytes := append(redeemScriptLenBytes, cmd.Bytes...)
+
+		// Parse the script into a script
+		var err error
+		redeemScript, err = script.Parse(bytes.NewReader(redeemScriptBytes))
+		if err != nil {
+			return false, err
+		}
+	} else {
+		redeemScript = nil
+	}
+
+	// get the script sig from the redeem script
+	z, err := t.SigHash(inputIndex, redeemScript, SIGHASH_ALL)
+	if err != nil {
+		return false, err
+	}
+
+	// Combine the scripts
+	combinedScript := script.Combine(*scriptPubkey, *txIn.ScriptSig)
+
+	// valuate the transaction. If it evaluates to true, then the redeem script
+	// or the pub key supplied is valid for the transaction and is allowed
+	// to spend the funds encumbered with this
+	return combinedScript.Evaluate(z, uint64(t.Locktime), uint64(txIn.Sequence), uint64(t.Version)), nil
 
 }
