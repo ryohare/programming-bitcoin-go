@@ -183,5 +183,5 @@ func DecodeBase58(address string) []byte {
 	}
 
 	// combine in big endian format
-	return num.Bytes()
+	return ReorderBytes(num.Bytes())
 }

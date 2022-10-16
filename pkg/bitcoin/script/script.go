@@ -543,3 +543,33 @@ func (s Script) IsP2shScriptPubkey() bool {
 	}
 	return true
 }
+
+func MakeP2pkh(h160 []byte) *Script {
+	cmds := []Command{}
+
+	cmds = append(cmds, Command{
+		Bytes:  []byte{byte(opcodes.OP_DUP)},
+		OpCode: true,
+	})
+	cmds = append(cmds, Command{
+		Bytes:  []byte{byte(opcodes.OP_HASH160)},
+		OpCode: true,
+	})
+
+	cmds = append(cmds, Command{
+		Bytes:  h160,
+		OpCode: false,
+	})
+
+	cmds = append(cmds, Command{
+		Bytes:  []byte{byte(opcodes.OP_EQUALVERIFY)},
+		OpCode: true,
+	})
+
+	cmds = append(cmds, Command{
+		Bytes:  []byte{byte(opcodes.OP_CHECKSIG)},
+		OpCode: true,
+	})
+
+	return &Script{Commands: cmds}
+}

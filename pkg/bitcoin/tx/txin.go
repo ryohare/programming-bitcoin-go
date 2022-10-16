@@ -34,7 +34,9 @@ func (txIn TransactionInput) Hex() string {
 }
 
 func (txIn TransactionInput) FetchTx(testnet bool) (*Transaction, error) {
-	return TxFetcherSvc.Fetch(string(txIn.PrevTx), testnet, false)
+	// reorder the bytes to little endian
+	b := utils.ReorderBytes(txIn.PrevTx)
+	return TxFetcherSvc.Fetch(string(b), testnet, false)
 }
 
 // Get the output value by looking up the tx hash. Returns the amount in satoshi.
@@ -91,6 +93,9 @@ func (txIn TransactionInput) Serialize() []byte {
 	return b
 }
 
+// Default values that need to be passed in are:
+// scriptSig = nil
+// sequence = 0xffffffff
 func MakeTransactionInput(prevTx []byte, prevIndex int, scriptSig *script.Script, sequence uint64) *TransactionInput {
 	if sequence == 0 {
 		sequence = 0xffffffff

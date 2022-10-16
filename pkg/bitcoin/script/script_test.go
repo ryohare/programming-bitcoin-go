@@ -160,3 +160,7 @@ func TestCollision(t *testing.T) {
 		t.Fatalf("failed to evaluate script")
 	}
 }
+
+func TestP2pkh(t *testing.T) {
+	MakeP2pkh([]byte{})
+}

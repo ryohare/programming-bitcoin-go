@@ -23,9 +23,9 @@ func init() {
 
 func getUrl(testnet bool) string {
 	if testnet {
-		return "https://blockstream.info/testnet/api/"
+		return "https://blockstream.info/testnet/api"
 	} else {
-		return "https://blockstream.info/mainnet/api/"
+		return "https://blockstream.info/mainnet/api"
 	}
 }
 
@@ -36,8 +36,11 @@ func (t TxFetcher) Fetch(txID string, testnet, fresh bool) (*Transaction, error)
 			return val, nil
 		}
 	}
+	// need to reporder the bytes for string print
 
-	url := fmt.Sprintf("%s/tx/%s/raw", getUrl(testnet), txID)
+	txStr := fmt.Sprintf("%x", utils.ReorderBytes([]byte(txID)))
+
+	url := fmt.Sprintf("%s/tx/%s/raw", getUrl(testnet), txStr)
 	resp, err := http.Get(url)
 
 	if err != nil {

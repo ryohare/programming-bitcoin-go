@@ -142,7 +142,7 @@ func (t Transaction) Fee(testnet bool) uint64 {
 }
 
 // Get the signature hash of the transaction.
-func (t Transaction) SigHash(inputIndex int, redeemScript *script.Script, sigHash uint32) (*big.Int, error) {
+func (t Transaction) SigHash(inputIndex int, redeemScript *script.Script, sigHash uint32, testnet bool) (*big.Int, error) {
 	// start with getting the version from the transaction
 	// it is the first element of the serialization stored
 	// in little endian formant. For memory allocation, using
@@ -186,7 +186,7 @@ func (t Transaction) SigHash(inputIndex int, redeemScript *script.Script, sigHas
 			if redeemScript != nil {
 				signedTxIn.ScriptSig = redeemScript
 			} else {
-				scriptPubKey, err := txIn.ScriptPubkey(false)
+				scriptPubKey, err := txIn.ScriptPubkey(testnet)
 				if err != nil {
 					return nil, fmt.Errorf("failed to parse script pubkey")
 				}
@@ -277,7 +277,7 @@ func (t Transaction) VerifyInput(inputIndex int) (bool, error) {
 	}
 
 	// get the script sig from the redeem script
-	z, err := t.SigHash(inputIndex, redeemScript, SIGHASH_ALL)
+	z, err := t.SigHash(inputIndex, redeemScript, SIGHASH_ALL, true)
 	if err != nil {
 		return false, err
 	}
