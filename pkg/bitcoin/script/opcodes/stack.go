@@ -93,19 +93,25 @@ func decode(element []byte) int {
 	var negative bool
 
 	// store the result as a byte and convert to an integer to retun
-	var result byte
+	var result uint64
 
 	// top bit being 1 means its negative
 	res := bigEndian[0] & 0x80
 	if res > 0 {
 		negative = true
 	} else {
-		result = bigEndian[0] & 0x7f
+		v := bigEndian[0] & 0x7f
+		result = uint64(v)
 	}
 
+	// TODO fix this error
 	for _, b := range bigEndian[1:] {
-		result <<= 8
-		result += b
+		// this nulls out the byte, not sure what we
+		// want to acheive here in python, but need
+		// to figure this one out
+		v := uint64(b)
+		v <<= 8
+		result += v
 	}
 
 	if negative {

@@ -159,3 +159,29 @@ func IntToVarintBytes(v int) []byte {
 	b := buf[:n]
 	return b
 }
+
+func getIndex(s rune) int {
+	for i, c := range BASE58_ALPHABET {
+		if string(s) == string(c) {
+			return i
+		}
+	}
+	return -1
+}
+
+func DecodeBase58(address string) []byte {
+	num := new(big.Int)
+	for _, b := range address {
+		i := getIndex(b)
+		num = num.Mul(num, big.NewInt(58))
+
+		if i != -1 {
+			num.Add(num, big.NewInt(int64(i)))
+		} else {
+			fmt.Printf("rune is outside the range for base58")
+		}
+	}
+
+	// combine in big endian format
+	return num.Bytes()
+}

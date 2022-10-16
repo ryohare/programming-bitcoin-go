@@ -59,3 +59,10 @@ func TestConvertIntToLittleEndian(t *testing.T) {
 	a := ConvertIntToLittleEndian(val)
 	fmt.Println(a)
 }
+
+func TestDecodeBase58(t *testing.T) {
+	addr := "mzx5YhAH9kNHtcN481u6WkjeHjYtVeKVh2"
+	DecodeBase58(addr)
+
+	// output verified against the python manually
+}
