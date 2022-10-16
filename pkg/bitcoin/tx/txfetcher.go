@@ -37,7 +37,7 @@ func (t TxFetcher) Fetch(txID string, testnet, fresh bool) (*Transaction, error)
 		}
 	}
 	// need to reporder the bytes for string print
-
+	// reverse the address
 	txStr := fmt.Sprintf("%x", utils.ReorderBytes([]byte(txID)))
 
 	url := fmt.Sprintf("%s/tx/%s/raw", getUrl(testnet), txStr)

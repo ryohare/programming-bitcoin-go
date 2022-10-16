@@ -1,13 +1,13 @@
 package tx
 
 import (
+	"encoding/hex"
 	"testing"
 )
 
 func TestTxFetcher(t *testing.T) {
-	targetTx := "0d6fe5213c0b3291f208cba8bfb59b7476dffacc4e5cb66f6eb20a080843a299"
-
-	trans, err := TxFetcherSvc.Fetch(targetTx, true, true)
+	b, _ := hex.DecodeString("99a24308080ab26e6fb65c4eccfadf76749bb5bfa8cb08f291320b3c21e56f0d")
+	trans, err := TxFetcherSvc.Fetch(string(b), true, true)
 
 	if err != nil {
 		t.Errorf("failed getting transaction because %s\n", err)
