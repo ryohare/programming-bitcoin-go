@@ -88,6 +88,7 @@ func TestCombine(t *testing.T) {
 	scriptPubKey := Script{}
 	var cmds []Command
 	cmds = append(cmds, Command{Bytes: sec})
+
 	// append OP_CHECKSIG (172)
 	b := make([]byte, 4)
 	binary.BigEndian.PutUint32(b, 172)

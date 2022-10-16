@@ -291,3 +291,19 @@ func (t Transaction) VerifyInput(inputIndex int) (bool, error) {
 	return combinedScript.Evaluate(z, uint64(t.Locktime), uint64(txIn.Sequence), uint64(t.Version)), nil
 
 }
+
+// verify the transaction is valid
+func (t Transaction) Verify(testnet bool) bool {
+	if t.Fee(testnet) <= 0 {
+		// cant have a negative fee
+		return false
+	}
+
+	for i := range t.Inputs {
+		verify, err := t.VerifyInput(i)
+		if err != nil || !verify {
+			return false
+		}
+	}
+	return true
+}
