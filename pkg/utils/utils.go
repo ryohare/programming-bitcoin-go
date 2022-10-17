@@ -169,7 +169,7 @@ func getIndex(s rune) int {
 	return -1
 }
 
-func DecodeBase58(address string) []byte {
+func DecodeBase58(address string) ([]byte, error) {
 	num := new(big.Int)
 	for _, b := range address {
 		i := getIndex(b)
@@ -182,8 +182,26 @@ func DecodeBase58(address string) []byte {
 		}
 	}
 
-	// combine in big endian format
-	return ReorderBytes(num.Bytes())
+	// convert the byte array to big endian (its little endian right now)
+	b := num.Bytes()
+
+	// check is the last 4 bytes of the address, shave them off
+	checksum := b[len(b)-4:]
+
+	// validate the checksum of the address
+	toVerify := b[:len(b)-4]
+
+	h256 := Hash256(toVerify)
+
+	for i := range checksum {
+		if checksum[i] != h256[i] {
+			return nil, fmt.Errorf("failed to verify checksum")
+		}
+	}
+
+	// the first byte is the network prefix and the last 4 are the checksum
+	// the middle 20 are the actual 20 byte address, hash160
+	return ReorderBytes(b[1 : len(b)-4]), nil
 }
 
 func Reverse(s string) string {

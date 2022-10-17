@@ -2,6 +2,7 @@ package tx
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/script"
@@ -19,9 +20,9 @@ func (txOut TransactionOutput) String() string {
 
 // Returns the byte serialization of the transaction output
 func (txOut TransactionOutput) Serialize() []byte {
-	var b []byte
+	b := make([]byte, 8)
+	binary.PutVarint(b, int64(txOut.Amount))
 
-	b = append(b, utils.UInt64ToLittleEndianBytes(txOut.Amount)...)
 	b = append(b, txOut.ScriptPubkey.Serialize()...)
 
 	return b

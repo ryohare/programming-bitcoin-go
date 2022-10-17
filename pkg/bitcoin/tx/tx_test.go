@@ -43,7 +43,7 @@ func TestSigHash(t *testing.T) {
 func TestTxE2e(t *testing.T) {
 	// this address is no longer live on the blockchain, so we cannot submit the transcation
 	// but this test will validate that the transaction is constructed correctly
-	prevTx, _ := hex.DecodeString("99a24308080ab26e6fb65c4eccfadf76749bb5bfa8cb08f291320b3c21e56f0d")
+	prevTx, _ := hex.DecodeString("0d6fe5213c0b3291f208cba8bfb59b7476dffacc4e5cb66f6eb20a080843a299")
 	prevIndex := 13
 	txIn := MakeTransactionInput(prevTx, prevIndex, nil, 0xffffffff)
 
@@ -51,7 +51,10 @@ func TestTxE2e(t *testing.T) {
 	changeAmount := int(0.33 * 100000000)
 
 	// change address in bytes
-	changeAddress := utils.DecodeBase58("zx5YhAH9kNHtcN481u6WkjeHjYtVeKVh2")
+	changeAddress, err := utils.DecodeBase58("mzx5YhAH9kNHtcN481u6WkjeHjYtVeKVh2")
+	if err != nil {
+		t.Fatalf("failed to decode address")
+	}
 
 	// create the script for sending to the change address
 	changeScript := script.MakeP2pkh(changeAddress)
@@ -63,7 +66,10 @@ func TestTxE2e(t *testing.T) {
 	}
 
 	// spend to address
-	spendToAddress := utils.DecodeBase58("mnrVtF8DWjMu839VW3rBfgYaAfKk8983Xf")
+	spendToAddress, err := utils.DecodeBase58("mnrVtF8DWjMu839VW3rBfgYaAfKk8983Xf")
+	if err != nil {
+		t.Fatalf("failed to decode address")
+	}
 
 	// create the script for the spend to address
 	spendToScript := script.MakeP2pkh(spendToAddress)
@@ -76,14 +82,22 @@ func TestTxE2e(t *testing.T) {
 
 	// created the inputs and the outputs, can now make the transaction object
 	tx := Transaction{
-		Inputs:   []*TransactionInput{txIn},
-		Outputs:  []*TransactionOutput{changeOutputTx, spendToTx},
-		Version:  1,
-		Locktime: 0,
+		Version:       1,
+		Inputs:        []*TransactionInput{txIn},
+		Outputs:       []*TransactionOutput{changeOutputTx, spendToTx},
+		Locktime:      0,
+		Testnet:       false,
+		Serialization: []byte{},
 	}
 
+	pyAnswer := "010000000199a24308080ab26e6fb65c4eccfadf76749bb5bfa8cb08f291320b3c21e56f0d0d00000000ffffffff02408af701000000001976a914d52ad7ca9b3d096a38e752c2018e6fbc40cdf26f88ac80969800000000001976a914507b27411ccf7f16f10297de6cef3f291623eddf88ac00000000"
+	goAnswer := fmt.Sprintf("%x", tx.Serialize())
+
+	fmt.Println(pyAnswer)
+	fmt.Println(goAnswer)
+
 	// dump tx for fun
-	fmt.Printf("%v\n", tx)
+	fmt.Printf("%v\n", tx.Serialize())
 
 	// next we need to sign the input
 	z, err := tx.SigHash(0, nil, SIGHASH_ALL, true)
@@ -128,5 +142,8 @@ func TestTxE2e(t *testing.T) {
 	// now get the byte stream of the transaction
 	binaryTx := tx.Serialize()
 
-	fmt.Println(binaryTx)
+	pyAnswer = "010000000199a24308080ab26e6fb65c4eccfadf76749bb5bfa8cb08f291320b3c21e56f0d0d0000006c4930460221008ed46aa2cf12d6d81065bfabe903670165b538f65ee9a3385e6327d80c66d3b50221003124f804410527497329ec4715e18558082d489b218677bd029e7fa306a72236012103935581e52c354cd2f484fe8ed83af7a3097005b2f9c60bff71d35bd795f54b67ffffffff02408af701000000001976a914d52ad7ca9b3d096a38e752c2018e6fbc40cdf26f88ac80969800000000001976a914507b27411ccf7f16f10297de6cef3f291623eddf88ac00000000"
+	goAnswer = fmt.Sprintf("%x", binaryTx)
+	fmt.Println(pyAnswer)
+	fmt.Println(goAnswer)
 }

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"testing"
@@ -61,8 +62,17 @@ func TestConvertIntToLittleEndian(t *testing.T) {
 }
 
 func TestDecodeBase58(t *testing.T) {
+	pyAnswer, _ := hex.DecodeString("d52ad7ca9b3d096a38e752c2018e6fbc40cdf26f")
+	pyAnswer = ReorderBytes(pyAnswer)
 	addr := "mzx5YhAH9kNHtcN481u6WkjeHjYtVeKVh2"
-	DecodeBase58(addr)
+	goAnswer, err := DecodeBase58(addr)
+	if err != nil {
+		t.Fatalf("failed to decode address")
+	}
 
-	// output verified against the python manually
+	for i := range goAnswer {
+		if goAnswer[i] != pyAnswer[i] {
+			t.Fatalf("failed validation on byte %d", i)
+		}
+	}
 }

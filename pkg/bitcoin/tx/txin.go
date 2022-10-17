@@ -105,6 +105,7 @@ func MakeTransactionInput(prevTx []byte, prevIndex int, scriptSig *script.Script
 
 	txIn.PrevTx = prevTx
 	txIn.PrevIndex = prevIndex
+	txIn.Sequence = int(sequence)
 
 	// no script sig was passed, use basic script
 	if scriptSig == nil {
