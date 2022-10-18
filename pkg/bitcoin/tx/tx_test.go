@@ -95,6 +95,13 @@ func TestTxE2e(t *testing.T) {
 
 	fmt.Println(pyAnswer)
 	fmt.Println(goAnswer)
+	fmt.Printf("%x\n", spendToTx.Serialize())
+
+	for i := range pyAnswer {
+		if pyAnswer[i] != goAnswer[i] {
+			t.Fatalf("failed to validate transaction output at byte %d", i)
+		}
+	}
 
 	// dump tx for fun
 	fmt.Printf("%v\n", tx.Serialize())
@@ -146,4 +153,10 @@ func TestTxE2e(t *testing.T) {
 	goAnswer = fmt.Sprintf("%x", binaryTx)
 	fmt.Println(pyAnswer)
 	fmt.Println(goAnswer)
+
+	for i := range pyAnswer {
+		if pyAnswer[i] != goAnswer[i] {
+			t.Fatalf("failed to validate transaction output at byte %d", i)
+		}
+	}
 }

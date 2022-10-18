@@ -63,7 +63,6 @@ func TestConvertIntToLittleEndian(t *testing.T) {
 
 func TestDecodeBase58(t *testing.T) {
 	pyAnswer, _ := hex.DecodeString("d52ad7ca9b3d096a38e752c2018e6fbc40cdf26f")
-	pyAnswer = ReorderBytes(pyAnswer)
 	addr := "mzx5YhAH9kNHtcN481u6WkjeHjYtVeKVh2"
 	goAnswer, err := DecodeBase58(addr)
 	if err != nil {

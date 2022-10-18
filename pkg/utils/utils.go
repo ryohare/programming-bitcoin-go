@@ -152,6 +152,12 @@ func IntToLittleEndianBytes(n int) []byte {
 	return b
 }
 
+func IntToLittleEndian8Bytes(n int) []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(n))
+	return b
+}
+
 // Takes in an int and encodes it to a var int
 func IntToVarintBytes(v int) []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
@@ -201,7 +207,7 @@ func DecodeBase58(address string) ([]byte, error) {
 
 	// the first byte is the network prefix and the last 4 are the checksum
 	// the middle 20 are the actual 20 byte address, hash160
-	return ReorderBytes(b[1 : len(b)-4]), nil
+	return b[1 : len(b)-4], nil
 }
 
 func Reverse(s string) string {
