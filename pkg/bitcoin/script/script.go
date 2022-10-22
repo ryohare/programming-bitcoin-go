@@ -9,6 +9,7 @@ import (
 	"math/big"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/script/opcodes"
+	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
 type Command struct {
@@ -299,6 +300,10 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) bool {
 		if !result {
 			break
 		}
+
+		// before we hit the main swith block, we need to inspect the stack for
+		// specific signatures indicating p2sh, segwit, etc
+
 		// check if the command is an opcode
 		if c.OpCode {
 			switch opCode := binary.BigEndian.Uint32(c.Bytes); opCode {
@@ -485,6 +490,62 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) bool {
 		} else {
 			// is not an op code and is thus a data element
 			stack.Push(c.Bytes)
+
+			// check for p2sh signature pattern. It will occur just after we push a the redeem script
+			// onto the stack, this branch, and we want to read ahead the list of commands and
+			// see if the signature occurs
+			if len(cmds[i:]) == 3 &&
+				uint32(cmds[0].Bytes[0]) == opcodes.OP_HASH160 &&
+				cmds[1].OpCode != true &&
+				len(cmds[1].Bytes) == 20 &&
+				uint32(cmds[2].Bytes[0]) == opcodes.OP_EQUAL {
+
+				// indicates we have a p2sh signature left in the command list
+				// dont care about HASH_160 opcode, care about the hash value
+				// and dont are about the OP_EQUAL
+				h160 := cmds[1].Bytes
+
+				// have the 20 byte hash160 that was supplied, hash the redeem scrip twhich was pushed
+				// into the stack just a second ago
+				if !stack.OpHash160() {
+					return false
+				}
+
+				// push the h160 onto the stack and evaulate it
+				stack.Push(h160)
+
+				// verify that the hashes matched with the op verify command
+				if !stack.OpEqual() {
+					return false
+				}
+
+				// no execute the op verify to verify the signature
+				if !stack.OpVerify() {
+					fmt.Printf("Failed to verify p2sh h160")
+					return false
+				}
+
+				// insert into the stack the varint length of the the redeem script and insert it at
+				// the front of the stack for parsing
+				length, err := utils.EncodeUVarInt(uint64(len(c.Bytes)))
+				if err != nil {
+					fmt.Printf("failed to encode redeem script length because %s\n", err.Error())
+					return false
+				}
+				redeemScript := append(length, c.Bytes...)
+
+				// redeem script is its own script now in byte serialized. Need to parse it into
+				// a script object so we can process it fully
+				script, err := Parse(bytes.NewReader(redeemScript))
+				if err != nil {
+					fmt.Printf("failed to parse redeem script because %s\n", err.Error())
+					return false
+				}
+
+				// extend the redeem script into the commands array so this evaulate will continue
+				// with more elements in the cmds array
+				cmds = append(cmds, script.Commands...)
+			}
 		}
 	}
 	return result
