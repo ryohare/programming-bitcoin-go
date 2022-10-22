@@ -84,7 +84,7 @@ func EncodeBase58Checksum(b []byte) []byte {
 	return EncodeBase58(buf)
 }
 
-func ReorderBytes(b []byte) []byte {
+func MutableReorderBytes(b []byte) []byte {
 	for i := 0; i < len(b)/2; i++ {
 		b[i], b[len(b)-i-1] = b[len(b)-i-1], b[i]
 	}
@@ -92,17 +92,26 @@ func ReorderBytes(b []byte) []byte {
 	return b
 }
 
+func ImmutableReorderBytes(b []byte) []byte {
+	bb := make([]byte, len(b))
+	for i := 0; i < len(b)/2; i++ {
+		bb[i], bb[len(b)-i-1] = b[len(b)-i-1], b[i]
+	}
+
+	return bb
+}
+
 // Convert a byte array from little endian format to big endian int format
 // and return as type big.int
 func ConvertLittleEndianToBigInt(b []byte) *big.Int {
-	littleEndian := ReorderBytes(b)
+	littleEndian := ImmutableReorderBytes(b)
 	n := new(big.Int).SetBytes(littleEndian)
 	return n
 }
 
 // Convert a big.Int into little endian by
 func ConvertIntToLittleEndian(i *big.Int) []byte {
-	b := ReorderBytes(i.Bytes())
+	b := ImmutableReorderBytes(i.Bytes())
 	return b
 }
 
@@ -111,6 +120,14 @@ func LittleEndianToVarInt(reader *bytes.Reader) int {
 	littleEndian := make([]byte, 4)
 	reader.Read(littleEndian)
 	bigEndian, _ := binary.ReadUvarint(bytes.NewReader(littleEndian))
+	return int(bigEndian)
+}
+
+// Reads 4 bytes as a little endian integer and converts to a big endian integer
+func LittleEndianToShort(reader *bytes.Reader) int {
+	littleEndian := make([]byte, 2)
+	reader.Read(littleEndian)
+	bigEndian := binary.LittleEndian.Uint32(littleEndian)
 	return int(bigEndian)
 }
 
@@ -135,13 +152,12 @@ func LittleEndianToUInt64(reader *bytes.Reader) uint64 {
 func LittleEndianToBigEndian(reader *bytes.Reader, length int) []byte {
 	littleEndian := make([]byte, length)
 	reader.Read(littleEndian)
-	return ReorderBytes(littleEndian)
+	return ImmutableReorderBytes(littleEndian)
 }
 
-// Converts a big endian uint64 to a little endian byte array
-func UInt64ToLittleEndianBytes(n uint64) []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, n)
+func ShortToLittleEndianBytes(n int16) []byte {
+	b := make([]byte, 2)
+	binary.LittleEndian.PutUint16(b, uint16(n))
 	return b
 }
 
@@ -152,7 +168,7 @@ func IntToLittleEndianBytes(n int) []byte {
 	return b
 }
 
-func IntToLittleEndian8Bytes(n int) []byte {
+func UInt64ToLittleEndianBytes(n uint64) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, uint64(n))
 	return b
@@ -216,4 +232,18 @@ func Reverse(s string) string {
 		r[i], r[j] = r[j], r[i]
 	}
 	return string(r)
+}
+
+func EncodeUVarInt(i uint64) ([]byte, error) {
+	if i < 0xfd {
+		return []byte{byte(i)}, nil
+	} else if i < 0x10000 {
+		return append([]byte{0xfd}, ShortToLittleEndianBytes(int16(i))...), nil
+	} else if i < 0x100000000 {
+		return append([]byte{0xfe}, IntToLittleEndianBytes(int(i))...), nil
+	} else if i < 0x1000000000000000 {
+		return append([]byte{0xff}, UInt64ToLittleEndianBytes(i)...), nil
+	} else {
+		return nil, fmt.Errorf("integer is too large %d", i)
+	}
 }

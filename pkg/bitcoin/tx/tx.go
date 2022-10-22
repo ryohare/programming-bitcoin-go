@@ -75,7 +75,7 @@ func (t Transaction) Serialize() []byte {
 
 func (t Transaction) Hash() []byte {
 	serial := t.Serialize()
-	return utils.ReorderBytes(utils.Hash256(serial))
+	return utils.MutableReorderBytes(utils.Hash256(serial))
 }
 
 func (t Transaction) ID() string {
@@ -151,15 +151,20 @@ func (t Transaction) SigHash(inputIndex int, redeemScript *script.Script, sigHas
 	//
 	// In essence, a bitcoin transaction is just 300 to 400 bytes
 	// of data and has to reach any one of tens of thousands of bitcoin nodes.
-	s := make([]byte, 400)
+	s := make([]byte, 4)
 	binary.LittleEndian.PutUint32(s, uint32(t.Version))
 
 	// next in the serialization is the number of input
-	// transactions. A var int is either 4 ir 8 bytes, so
+	// transactions. A var int is either 4 or 8 bytes, so
 	// we will allocate enough memory for the worst case
-	txInLenBytes := make([]byte, 8)
-	binary.PutVarint(txInLenBytes, int64(len(t.Inputs)))
-	s = append(s, txInLenBytes...)
+	// txInLenBytes := make([]byte, 4)
+	// binary.PutUvarint(txInLenBytes, uint64(len(t.Inputs)))
+	// s = append(s, txInLenBytes...)
+	varint, err := utils.EncodeUVarInt(uint64(len(t.Inputs)))
+	for err != nil {
+		return nil, err
+	}
+	s = append(s, varint...)
 
 	// Iterate over the inputs looking for the inputs requring
 	// a signature (passed into the function). Also, seralize
@@ -194,6 +199,7 @@ func (t Transaction) SigHash(inputIndex int, redeemScript *script.Script, sigHas
 			}
 
 			signedTxInBytes := signedTxIn.Serialize()
+			fmt.Printf("%x\n", signedTxInBytes)
 			s = append(s, signedTxInBytes...)
 		} else {
 			// this is an input we are not signin, and thus not spending
@@ -212,10 +218,12 @@ func (t Transaction) SigHash(inputIndex int, redeemScript *script.Script, sigHas
 	// encode the length of the txOuts into the buffer
 	// Max size of a varint is 8 bytes, make the buffer
 	// 8 in length for the worst case
-	txOutLenBytes := make([]byte, 8)
-	binary.PutVarint(txOutLenBytes, int64(len(t.Outputs)))
-	s = append(s, txOutLenBytes...)
-
+	b, err := utils.EncodeUVarInt(uint64(len(t.Outputs)))
+	if err != nil {
+		return nil, err
+	}
+	s = append(s, b...)
+	fmt.Printf("%x\n", s)
 	// next we serlaized all the transactions outputs of this transaction
 	for _, txOut := range t.Outputs {
 		txOutBytes := txOut.Serialize()

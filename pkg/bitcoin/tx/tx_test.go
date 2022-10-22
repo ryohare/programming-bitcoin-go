@@ -103,9 +103,6 @@ func TestTxE2e(t *testing.T) {
 		}
 	}
 
-	// dump tx for fun
-	fmt.Printf("%v\n", tx.Serialize())
-
 	// next we need to sign the input
 	z, err := tx.SigHash(0, nil, SIGHASH_ALL, true)
 	if err != nil {
@@ -118,16 +115,20 @@ func TestTxE2e(t *testing.T) {
 		t.Fatalf("failed to make private key because %s\n", err.Error())
 	}
 
+	// fmt.Printf("%x\n%x\n", privateKey.Point.
 	// get the der formated signature for sighash
 	_sig, err := privateKey.Sign(z)
 	if err != nil {
 		t.Fatalf("failed to sign the transaction because %s\n", err)
 	}
 	der := _sig.Der()
+	fmt.Printf("%x\n", der)
 
 	// append the SIGHASH flag to the transaction
 	sighash := byte(SIGHASH_ALL)
 	sig := append(der, sighash)
+
+	fmt.Printf("%x", sig)
 
 	// get the public key in SEC compressed format
 	secPubKey := privateKey.Point.Sec(true)

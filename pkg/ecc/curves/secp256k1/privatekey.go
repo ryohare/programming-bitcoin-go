@@ -2,7 +2,6 @@ package secp256k1
 
 import (
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
 	"math/big"
@@ -60,6 +59,7 @@ func (p PrivateKey) GetSecretBytes() []byte {
 	return b
 }
 
+// Get a unique determansitic k value for the specified sig (z)
 func (p *PrivateKey) GetDeterministsicK(z *big.Int) *big.Int {
 
 	// k=b'\x00'*32
@@ -137,13 +137,15 @@ func (p *PrivateKey) GetDeterministsicK(z *big.Int) *big.Int {
 func (pk PrivateKey) Sign(z *big.Int) (*Signature, error) {
 
 	// k - 32 bytes = 256 bit K
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
-	if err != nil {
-		return nil, err
-	}
-	k := new(big.Int).SetBytes(b)
+	// b := make([]byte, 32)
+	// _, err := rand.Read(b)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// k := new(big.Int).SetBytes(b)
 
+	k := pk.GetDeterministsicK(z)
+	fmt.Printf("%x\n", k)
 	// // r
 	// kG, err := RMultiply(*GetGeneratorPoint(), *k)
 	// if err != nil {
@@ -191,6 +193,9 @@ func (pk PrivateKey) Sign(z *big.Int) (*Signature, error) {
 	s = new(big.Int).Add(s, z)
 	s = s.Mul(s, kInv)
 	s = s.Mod(s, N)
+
+	fmt.Printf("\n%x\n", r)
+	fmt.Printf("%x\n", s)
 
 	return &Signature{
 			R: r,

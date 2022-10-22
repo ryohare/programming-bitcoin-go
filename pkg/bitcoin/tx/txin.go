@@ -35,7 +35,7 @@ func (txIn TransactionInput) Hex() string {
 
 func (txIn TransactionInput) FetchTx(testnet bool) (*Transaction, error) {
 	// reorder the bytes to little endian
-	b := utils.ReorderBytes(txIn.PrevTx)
+	b := utils.ImmutableReorderBytes(txIn.PrevTx)
 	return TxFetcherSvc.Fetch(string(b), testnet, false)
 }
 
@@ -77,9 +77,7 @@ func ParseTransactionInput(reader *bytes.Reader) *TransactionInput {
 // Returns the byte serialization of the transaction input
 func (txIn TransactionInput) Serialize() []byte {
 	// get the reversed byte order of the output hash for the input
-	var b []byte
-
-	b = append(b, utils.ReorderBytes(txIn.PrevTx)...)
+	b := utils.ImmutableReorderBytes(txIn.PrevTx)
 
 	// previous index converted from big endian to little endian
 	b = append(b, utils.IntToLittleEndianBytes(txIn.PrevIndex)...)

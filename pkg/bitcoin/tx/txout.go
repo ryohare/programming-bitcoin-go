@@ -19,7 +19,7 @@ func (txOut TransactionOutput) String() string {
 
 // Returns the byte serialization of the transaction output
 func (txOut TransactionOutput) Serialize() []byte {
-	b := utils.IntToLittleEndian8Bytes(int(txOut.Amount))
+	b := utils.UInt64ToLittleEndianBytes(uint64(txOut.Amount))
 	b = append(b, txOut.ScriptPubkey.Serialize()...)
 	return b
 }

@@ -87,7 +87,7 @@ func decode(element []byte) int {
 
 	// reverse the element to be in big endian
 	// (was previously encoded as little endian)
-	bigEndian := utils.ReorderBytes(element)
+	bigEndian := utils.ImmutableReorderBytes(element)
 
 	// negative flag
 	var negative bool
