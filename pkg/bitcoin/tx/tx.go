@@ -315,3 +315,25 @@ func (t Transaction) Verify(testnet bool) bool {
 	}
 	return true
 }
+
+// Checks if this transaction is a coinbase transaction
+func (t Transaction) IsCoinbase() bool {
+	// first check that the number of inputs is 1
+	if len(t.Inputs) != 1 {
+		return false
+	}
+
+	// check that the previous transaction hash is all 0's
+	prevTxHash := new(big.Int).SetBytes(t.Inputs[0].PrevTx)
+	if prevTxHash.Cmp(big.NewInt(0)) != 0 {
+		return false
+	}
+
+	// now check that the prev index is 0xffffffff
+	prevTxInputs := big.NewInt(0xffffffff)
+	if prevTxInputs.Cmp(big.NewInt(int64(t.Inputs[0].PrevIndex))) != 0 {
+		return false
+	}
+
+	return true
+}
