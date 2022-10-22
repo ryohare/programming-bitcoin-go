@@ -167,10 +167,16 @@ func (s S256Point) Sec(compressed bool) []byte {
 }
 
 func Sqrt(fe1 fe.FieldElement) (*fe.FieldElement, error) {
+	// def sqrt(self):
+	// return self**((P+1) // 4)
+
+	//self.__pow__( P+1 // 4 )
+
+	// step 1, calcu;ate P+1
 	p1 := new(big.Int).Add(GetPrime(), big.NewInt(1))
 	p1 = p1.Div(p1, big.NewInt(4))
 
-	res, err := fe.RMultiply(&fe1, p1)
+	res, err := fe.Exponentiate(&fe1, *p1)
 
 	if err != nil {
 		return nil, err
@@ -208,16 +214,17 @@ func ParseSec(secBin []byte) (*S256Point, error) {
 	}
 
 	beta, err := Sqrt(*alpha)
-
 	if err != nil {
 		return nil, err
 	}
 
 	p1 := new(big.Int).Sub(GetPrime(), beta.Num)
+
 	var evenBeta *fe.FieldElement
 	var oddBeta *fe.FieldElement
 	if new(big.Int).Mod(beta.Num, big.NewInt(2)).Cmp(big.NewInt(2)) == 0 {
 		evenBeta = beta
+
 		oddBeta = &fe.FieldElement{Num: p1, Prime: GetPrime()}
 	} else {
 		oddBeta = beta

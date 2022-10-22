@@ -161,3 +161,52 @@ func TestTxE2e(t *testing.T) {
 		}
 	}
 }
+
+func TestP2shSignatureValidation(t *testing.T) {
+	modifiedTx, _ := hex.DecodeString("0100000001868278ed6ddfb6c1ed3ad5f8181eb0c7a385aa0836f01d5e4789e6bd304d87221a000000475221022626e955ea6ea6d98850c994f9107b036b1334f18ca8830bfff1295d21cfdb702103b287eaf122eea69030a0e9feed096bed8045c8b98bec453e1ffac7fbdbd4bb7152aeffffffff04d3b11400000000001976a914904a49878c0adfc3aa05de7afad2cc15f483a56a88ac7f400900000000001976a914418327e3f3dda4cf5b9089325a4b95abdfa0334088ac722c0c00000000001976a914ba35042cfe9fc66fd35ac2224eebdafd1028ad2788acdc4ace020000000017a91474d691da1574e6b3c192ecfb52cc8984ee7b6c56870000000001000000")
+
+	// tkae sha256 to get the z value which is the signature hash
+	z := utils.Hash256(modifiedTx)
+
+	// get z (signature hash) as bytes in big endian, which is
+	// the bytes format already, so were good to go
+	fmt.Printf("%x\n", z)
+
+	// Get the public keys from the tx
+	sec, _ := hex.DecodeString("022626e955ea6ea6d98850c994f9107b036b1334f18ca8830bfff1295d21cfdb70")
+
+	// get the der signatures for the transaction
+	der, _ := hex.DecodeString("3045022100dc92655fe37036f47756db8102e0d7d5e28b3beb83a8fef4f5dc0559bddfb94e02205a36d4e4e6c7fcd16658c50783e00c341609977aed3ad00937bf4ee942a89937")
+
+	fmt.Printf("%x\n", sec)
+	fmt.Printf("%x\n", der)
+
+	// validate the signature
+	point, err := secp256k1.ParseSec(sec)
+	if err != nil {
+		t.Fatalf("failed to parse the sec to a valid secp256k1 point")
+	}
+
+	fmt.Println(point.Point.A.Num)
+	fmt.Println(point.Point.B.Num)
+	fmt.Printf("%x\n", point.Point.X.Num.Bytes())
+	fmt.Printf("%x\n", point.Point.Y.Num.Bytes())
+
+	// parse the signature into a der object
+	sig, err := secp256k1.ParseSignature(der)
+	if err != nil {
+		t.Fatalf("failed to parse the signature")
+	}
+
+	fmt.Printf("%x\n", sig.R)
+	fmt.Printf("%x\n", sig.S)
+
+	// do final verification
+	result, err := point.Verify(*new(big.Int).SetBytes(z), *sig)
+	if err != nil {
+		t.Fatalf("failed to verify the signatures because %s", err.Error())
+	}
+	if !result {
+		t.Fatalf("failed to verify the signature")
+	}
+}

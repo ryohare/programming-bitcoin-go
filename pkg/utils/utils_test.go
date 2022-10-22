@@ -75,3 +75,40 @@ func TestDecodeBase58(t *testing.T) {
 		}
 	}
 }
+
+func TestP2shCalculation(t *testing.T) {
+	h160, _ := hex.DecodeString("74d691da1574e6b3c192ecfb52cc8984ee7b6c56")
+
+	// main net test
+	result := EncodeBase58Checksum(append([]byte{0x05}, h160...))
+
+	expectedResult := "3CLoMMyuoDQTPRD3XYZtCvgvkadrAdvdXh"
+
+	resultStr := string(result)
+
+	if expectedResult != resultStr {
+		t.Fatalf("failed to verify the address")
+	}
+
+}
+
+func TestRedeemScriptHashing(t *testing.T) {
+
+	binaryRedeemScript, _ := hex.DecodeString("5221022626e955ea6ea6d98850c994f9107b036b1334f18ca8830bfff1295d21cfdb702103b287eaf122eea69030a0e9feed096bed8045c8b98bec453e1ffac7fbdbd4bb7152ae")
+	binaryHashResult, _ := hex.DecodeString("74d691da1574e6b3c192ecfb52cc8984ee7b6c56")
+	h160 := Hash160(binaryRedeemScript)
+
+	if len(h160) != len(binaryHashResult) {
+		t.Fatalf("lengths are not the same")
+	}
+
+	for i := range h160 {
+		if h160[i] != binaryHashResult[i] {
+			t.Fatalf("failed to verify result at byte position %d", i)
+		}
+	}
+
+}
+func TestH160ToP2shAddress(t *testing.T) {
+
+}

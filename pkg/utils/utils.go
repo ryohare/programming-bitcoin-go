@@ -235,15 +235,37 @@ func Reverse(s string) string {
 }
 
 func EncodeUVarInt(i uint64) ([]byte, error) {
+
+	//bi := big.NewInt(0x10000000000000000)
+	bi := big.NewInt(0x1000000000000000)
+	st := big.NewInt(16)
+	ib := big.NewInt(int64(i))
+
 	if i < 0xfd {
 		return []byte{byte(i)}, nil
 	} else if i < 0x10000 {
 		return append([]byte{0xfd}, ShortToLittleEndianBytes(int16(i))...), nil
 	} else if i < 0x100000000 {
 		return append([]byte{0xfe}, IntToLittleEndianBytes(int(i))...), nil
-	} else if i < 0x1000000000000000 {
+	} else if bi.Mul(bi, st).Cmp(ib) == -1 {
 		return append([]byte{0xff}, UInt64ToLittleEndianBytes(i)...), nil
 	} else {
 		return nil, fmt.Errorf("integer is too large %d", i)
 	}
+}
+
+func H160ToP2pkhAddress(h160 []byte, testnet bool) []byte {
+	prefix := byte(0x00)
+	if testnet {
+		prefix = 0x6f
+	}
+	return EncodeBase58(append([]byte{prefix}, h160...))
+}
+
+func H160ToP2shAddress(h160 []byte, testnet bool) []byte {
+	prefix := byte(0x05)
+	if testnet {
+		prefix = 0xc4
+	}
+	return EncodeBase58(append([]byte{prefix}, h160...))
 }
