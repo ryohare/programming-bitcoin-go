@@ -269,3 +269,40 @@ func H160ToP2shAddress(h160 []byte, testnet bool) []byte {
 	}
 	return EncodeBase58(append([]byte{prefix}, h160...))
 }
+
+func BitsToTarget(bits []byte) *big.Int {
+	exponent := bits[len(bits)-1]
+	coeffecient := LittleEndianToInt(bytes.NewReader(bits[:len(bits)-1]))
+
+	_target := new(big.Int).Exp(big.NewInt(256), big.NewInt(int64(exponent)-3), nil)
+	fmt.Println(_target)
+	_target = _target.Mul(_target, big.NewInt(int64(coeffecient)))
+
+	return _target
+}
+
+// Turns a target integer into a bits byte array
+func TargetsToBits(target uint32) []byte {
+	rawBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(rawBytes, target)
+
+	// kill leading 0's in the number, because the python code does
+	newRawBytes := make([]byte, 1)
+	for _, b := range rawBytes {
+		if b != 0x00 {
+			newRawBytes = append(newRawBytes, b)
+		} else {
+			break
+		}
+	}
+
+	// bits format is a way to express large numbers succicntly
+	// Supports both negative and positive numbers.
+	// If the first bit in the coeffecient is a 1, the bits field
+	// is interpreted as a negative number. Target is always positive
+	// if newRawBytes[0] > 0x7f {
+	// 	exp
+	// }
+
+	return newRawBytes
+}
