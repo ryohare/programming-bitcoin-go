@@ -11,6 +11,10 @@ const (
 	COMMAND_VERSION = "version"
 )
 
+func (v Version) GetCommand() string {
+	return COMMAND_VERSION
+}
+
 type Version struct {
 	Version uint32
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
@@ -40,6 +41,67 @@ func Make(cmd, payload []byte, testnet bool) *Envelope {
 	return env
 }
 
+func ParseSocket(reader net.Conn, testnet bool) (*Envelope, error) {
+	// Read the first 4 bytes of the stream as the stream magic
+	magicBytes, err := ioutil.ReadAll(io.LimitReader(reader, 4))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(magicBytes) == 0 {
+		return nil, fmt.Errorf("connection reset by peer via bitcoin network")
+	}
+
+	var expectedNetwork []byte
+	if testnet {
+		expectedNetwork = TESTNET_NETWORK_MAGIC[:]
+	} else {
+		expectedNetwork = MAINNET_NETWORK_MAGIC[:]
+	}
+
+	if !utils.CompareByteArrays(magicBytes, expectedNetwork) {
+		return nil, fmt.Errorf("magic is not correct, read %x received %x", magicBytes, expectedNetwork)
+	}
+
+	// read in the command section which is the next 12 bytes of the stream
+	commandBytes, err := ioutil.ReadAll(io.LimitReader(reader, 12))
+	if err != nil {
+		return nil, err
+	}
+
+	// Read the payload section now, which is variable size lengths
+	payloadLength, err := ioutil.ReadAll(io.LimitReader(reader, 4))
+	if err != nil {
+		return nil, err
+	}
+	// the bytes are ordered little endian, so read it as a little endian int
+	length := binary.LittleEndian.Uint32(payloadLength)
+
+	// next 4 bytes are the checksum
+	checksum, err := ioutil.ReadAll(io.LimitReader(reader, 4))
+	if err != nil {
+		return nil, err
+	}
+
+	// Now, read the payload given we have a length to read
+	payloadBytes, err := ioutil.ReadAll(io.LimitReader(reader, int64(length)))
+	if err != nil {
+		return nil, err
+	}
+
+	// check the checksum, which is the first 4 bytes of the hash256 of the payload
+	calculatedChecksumBytes := utils.Hash256(payloadBytes)[:4]
+
+	if !utils.CompareByteArrays(calculatedChecksumBytes, checksum) {
+		return nil, fmt.Errorf("checksomes do not match, %x vs %x", checksum, calculatedChecksumBytes)
+	}
+
+	return &Envelope{
+		Command: commandBytes,
+		Payload: payloadBytes,
+		Magic:   magicBytes,
+	}, nil
+}
 func Parse(reader *bytes.Reader, testnet bool) (*Envelope, error) {
 	// Read the first 4 bytes of the stream as the stream magic
 	magicBytes, err := ioutil.ReadAll(io.LimitReader(reader, 4))
