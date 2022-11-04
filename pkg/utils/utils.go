@@ -155,6 +155,12 @@ func LittleEndianToBigEndian(reader *bytes.Reader, length int) []byte {
 	return ImmutableReorderBytes(littleEndian)
 }
 
+func ShortToBigEndianBytes(n int16) []byte {
+	b := make([]byte, 2)
+	binary.BigEndian.PutUint16(b, uint16(n))
+	return b
+}
+
 func ShortToLittleEndianBytes(n int16) []byte {
 	b := make([]byte, 2)
 	binary.LittleEndian.PutUint16(b, uint16(n))
@@ -163,6 +169,12 @@ func ShortToLittleEndianBytes(n int16) []byte {
 
 // Converts a big endian int to a little endian byte array
 func IntToLittleEndianBytes(n int) []byte {
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, uint32(n))
+	return b
+}
+
+func UInt32ToLittleEndianBytes(n uint32) []byte {
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, uint32(n))
 	return b
