@@ -47,3 +47,19 @@ func TestManualHandshake(t *testing.T) {
 	}
 	fmt.Printf("%s\n", string(env.Command))
 }
+
+func TestHandshake(t *testing.T) {
+	node, err := MakeNode(
+		true,
+		"testnet.programmingbitcoin.com",
+		18333,
+	)
+	if err != nil {
+		t.Fatalf("failed to create a simple node because %s", err.Error())
+	}
+
+	if !node.Handshake() {
+		t.Fatalf("failed to handshake with the specified peer")
+	}
+
+}

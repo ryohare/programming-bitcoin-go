@@ -1,12 +1,12 @@
 package simple
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/network/envelope"
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/network/messages"
-	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
 type Node struct {
@@ -76,8 +76,8 @@ func (n *Node) Handshake() bool {
 
 	// after a version message, we expect back a version message from
 	// peer as well as a verack message
-	n.WaitFor()
-	return true
+	_, err := n.WaitFor(messages.COMMAND_VERACK)
+	return err == nil
 }
 
 // Returns a network envelope read from the remote peer
@@ -94,7 +94,7 @@ func (n *Node) Read() (*envelope.Envelope, error) {
 // Synchronous blocking call waiting for a particular network message
 func (n *Node) WaitFor(command messages.Command) (*messages.Message, error) {
 
-	cmd := ""
+	var cmd messages.Command
 	payload := []byte{}
 	for {
 		env, err := n.Read()
@@ -103,13 +103,16 @@ func (n *Node) WaitFor(command messages.Command) (*messages.Message, error) {
 		}
 
 		// check the envelope's command
-		if utils.CompareByteArrays(env.Command, []byte(command)) {
-			cmd = string(env.Command)
+		// command is a netascii string, so convert everything to
+		// a string and then command and compare
+		_cmd := bytes.Trim(env.Command, "\x00")
+		if messages.Command(string(_cmd)) == command {
+			cmd = messages.Command(string(bytes.Trim(env.Command, "\x00")))
 			payload = env.Payload
 			break
 		} else {
 			// check for overhead messages and service them
-			cmd := string(env.Command)
+			cmd := messages.Command(bytes.Trim(env.Command, "\x00"))
 
 			if cmd == new(messages.Version).GetCommand() {
 				// received a version command message, send back
@@ -137,6 +140,11 @@ func (n *Node) WaitFor(command messages.Command) (*messages.Message, error) {
 		fmt.Println(payload)
 		versionMsg := messages.MakeVersion(n.Testnet)
 		msg = versionMsg
+		return &msg, nil
+	case messages.COMMAND_VERACK:
+		verack := messages.ParseVerAck(payload)
+		var msg messages.Message
+		msg = verack
 		return &msg, nil
 	default:
 		return nil, fmt.Errorf("unknown command matched %s", cmd)

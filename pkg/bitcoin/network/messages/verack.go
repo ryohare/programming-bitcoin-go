@@ -4,7 +4,9 @@ const COMMAND_VERACK Command = "verack"
 
 type VersionAck struct{}
 
-func ParseVerAck() {}
+func ParseVerAck(payload []byte) *VersionAck {
+	return &VersionAck{}
+}
 
 func MakeVerAck() {}
 
