@@ -1,6 +1,6 @@
 package messages
 
-const COMMAND_PING = "ping"
+const COMMAND_PING Command = "ping"
 
 type Ping struct{}
 
@@ -12,6 +12,6 @@ func (v *Ping) Serialize() []byte {
 	return nil
 }
 
-func (v Ping) GetCommand() string {
-	return COMMAND_VERACK
+func (v Ping) GetCommand() Command {
+	return COMMAND_PING
 }

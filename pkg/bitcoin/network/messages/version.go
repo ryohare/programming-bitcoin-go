@@ -7,11 +7,9 @@ import (
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
-const (
-	COMMAND_VERSION = "version"
-)
+const COMMAND_VERSION Command = "version"
 
-func (v Version) GetCommand() string {
+func (v Version) GetCommand() Command {
 	return COMMAND_VERSION
 }
 

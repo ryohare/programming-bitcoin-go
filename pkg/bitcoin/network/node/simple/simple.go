@@ -66,6 +66,20 @@ func (n *Node) Send(msg messages.Message) error {
 	return nil
 }
 
+// Perform a handshake function with a specific node
+func (n *Node) Handshake() bool {
+	// start of the handshake with a version message
+	version := messages.MakeVersion(n.Testnet)
+
+	// send the version message
+	n.Send(version)
+
+	// after a version message, we expect back a version message from
+	// peer as well as a verack message
+	n.WaitFor()
+	return true
+}
+
 // Returns a network envelope read from the remote peer
 func (n *Node) Read() (*envelope.Envelope, error) {
 	env, err := envelope.ParseSocket(n.Socket, n.Testnet)
@@ -78,7 +92,7 @@ func (n *Node) Read() (*envelope.Envelope, error) {
 }
 
 // Synchronous blocking call waiting for a particular network message
-func (n *Node) WaitFor(command string) (*messages.Message, error) {
+func (n *Node) WaitFor(command messages.Command) (*messages.Message, error) {
 
 	cmd := ""
 	payload := []byte{}

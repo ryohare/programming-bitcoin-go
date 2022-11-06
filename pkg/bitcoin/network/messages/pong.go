@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-const COMMAND_PONG = "pong"
+const COMMAND_PONG Command = "pong"
 
 type Pong struct {
 	Nonce []byte
@@ -33,6 +33,6 @@ func (v *Pong) Serialize() []byte {
 	return v.Nonce
 }
 
-func (v Pong) GetCommand() string {
+func (v Pong) GetCommand() Command {
 	return COMMAND_PONG
 }
