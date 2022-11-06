@@ -61,5 +61,4 @@ func TestHandshake(t *testing.T) {
 	if !node.Handshake() {
 		t.Fatalf("failed to handshake with the specified peer")
 	}
-
 }
