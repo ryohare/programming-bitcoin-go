@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/block"
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/network/messages"
 )
 
@@ -61,4 +62,41 @@ func TestHandshake(t *testing.T) {
 	if !node.Handshake() {
 		t.Fatalf("failed to handshake with the specified peer")
 	}
+}
+
+func TestGetHeaders(t *testing.T) {
+	// make a node
+	node, err := MakeNode(
+		true,
+		"testnet.programmingbitcoin.com",
+		18333,
+	)
+	if err != nil {
+		t.Fatalf("failed to create a simple node because %s", err.Error())
+	}
+
+	// handshake with the peer
+	if !node.Handshake() {
+		t.Fatalf("failed to handshake with the specified peer")
+	}
+
+	// start processing from the genesis block
+	genesisBlock, err := block.GetTestnetGenesisBlock()
+	if err != nil {
+		t.Fatalf("failed to get the genesis block because %s", err.Error())
+	}
+
+	genesisBlockHash, err := genesisBlock.Hash()
+	if err != nil {
+		t.Fatalf("failed to get the genesis block hash because %s", err.Error())
+	}
+
+	getHeadersMessage, err := messages.MakeGetHeaders(70015, 1, genesisBlockHash, nil)
+	if err != nil {
+		t.Fatalf("failed to create the getheaders message because %s", err.Error())
+	}
+
+	// send the get headers message
+	node.Send(getHeadersMessage)
+
 }

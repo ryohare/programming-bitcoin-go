@@ -3,6 +3,7 @@ package block
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -11,6 +12,32 @@ import (
 )
 
 const TwoWeeks = 60 * 60 * 24 * 14
+
+const lowestBitsStr = "ffff001d"
+const genesisBlockStr = "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
+const testnetGenesisBlockStr = "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff001d1aa4ae18"
+
+func GetMainnetGenesisBlockBytes() ([]byte, error) {
+	return hex.DecodeString(genesisBlockStr)
+}
+
+func GetMainnetGenesisBlock() (*BlockHeader, error) {
+	b, _ := GetMainnetGenesisBlockBytes()
+	return ParseHeader(bytes.NewReader(b))
+}
+
+func GetTestnetGenesisBlockBytes() ([]byte, error) {
+	return hex.DecodeString(testnetGenesisBlockStr)
+}
+
+func GetTestnetGenesisBlock() (*BlockHeader, error) {
+	b, _ := GetTestnetGenesisBlockBytes()
+	return ParseHeader(bytes.NewReader(b))
+}
+
+func GetLowestBitsBytes() ([]byte, error) {
+	return hex.DecodeString(lowestBitsStr)
+}
 
 type BlockHeader struct {
 	// 4 bytes - Used to encode capabilities about the miner for the mined block
