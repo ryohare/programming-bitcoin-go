@@ -51,6 +51,10 @@ func ParseHeaders(reader *bytes.Reader) (*Headers, error) {
 	return &Headers{BlockHeaders: bhs}, nil
 }
 
+func (h Headers) Serialize() []byte {
+	return nil
+}
+
 func (h Headers) GetCommand() Command {
 	return COMMAND_HEADERS
 }

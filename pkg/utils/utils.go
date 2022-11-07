@@ -11,6 +11,8 @@ import (
 )
 
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+const TwoWeeks int = 60 * 60 * 24 * 14
+const MaxTarget int = 0xffff*256 ^ (0x1d - 3)
 
 // Double sha256 hash
 func Hash256(s []byte) []byte {
@@ -140,6 +142,14 @@ func LittleEndianToInt(reader *bytes.Reader) int {
 }
 
 // Reads 4 bytes as a little endian integer and converts to a big endian integer
+func LittleEndianToUInt32(reader *bytes.Reader) uint32 {
+	littleEndian := make([]byte, 4)
+	reader.Read(littleEndian)
+	bigEndian := binary.LittleEndian.Uint32(littleEndian)
+	return bigEndian
+}
+
+// Reads 8 bytes as a little endian integer and converts to a big endian integer
 func LittleEndianToUInt64(reader *bytes.Reader) uint64 {
 	littleEndian := make([]byte, 8)
 	reader.Read(littleEndian)
@@ -287,14 +297,26 @@ func BitsToTarget(bits []byte) *big.Int {
 	coeffecient := LittleEndianToInt(bytes.NewReader(bits[:len(bits)-1]))
 
 	_target := new(big.Int).Exp(big.NewInt(256), big.NewInt(int64(exponent)-3), nil)
+	_target = new(big.Int).Mul(_target, big.NewInt(int64(coeffecient)))
 	fmt.Println(_target)
-	_target = _target.Mul(_target, big.NewInt(int64(coeffecient)))
-
 	return _target
 }
 
+// func BitsToTarget(bits []byte) uint32 {
+// 	// get trhe last element which is the exponent
+// 	exponent := bits[len(bits)-1]
+
+// 	// get the coefficient which is stored in the first 3 bytes of the
+// 	coeffecient := LittleEndianToUInt32(bytes.NewReader(bits[:len(bits)-2]))
+
+// 	// return the result which is caculated as follows:
+// 	return coeffecient*256 ^ (uint32(exponent) - 3)
+// }
+
 // Turns a target integer into a bits byte array
 func TargetsToBits(target uint32) []byte {
+
+	// step 1, is to convert the integer into a big endian bytes array
 	rawBytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(rawBytes, target)
 
@@ -312,11 +334,23 @@ func TargetsToBits(target uint32) []byte {
 	// Supports both negative and positive numbers.
 	// If the first bit in the coeffecient is a 1, the bits field
 	// is interpreted as a negative number. Target is always positive
-	// if newRawBytes[0] > 0x7f {
-	// 	exp
-	// }
+	exponent := make([]byte, 4)
+	coefficient := []byte{0x00}
+	if newRawBytes[0] > 0x7f {
+		binary.LittleEndian.PutUint32(exponent, uint32(len(newRawBytes)+1))
+		coefficient = append(coefficient, newRawBytes[:2]...)
+	} else {
+		// exponent is how long the number is base256
+		binary.LittleEndian.PutUint32(exponent, uint32(len(newRawBytes)))
 
-	return newRawBytes
+		// coefficient is the first 3 digits of the base 256 number
+		coefficient = newRawBytes[:3]
+	}
+
+	// coefficient is the little endian with the exponent going last
+	newBits := append(ImmutableReorderBytes(coefficient), exponent...)
+
+	return newBits
 }
 
 func CompareByteArrays(a, b []byte) bool {
@@ -331,4 +365,94 @@ func CompareByteArrays(a, b []byte) bool {
 	}
 
 	return true
+}
+
+// Calculates the new bits given a 2016-block time differential and the previous bits
+func CalculateNewBits(previousBits []byte, timeDifferential int) []byte {
+	newTimeDiff := timeDifferential
+
+	// if the time differential; is greater than 8 weeks, set to 8 weeks
+	if timeDifferential > TwoWeeks*4 {
+		newTimeDiff = TwoWeeks * 4
+	}
+
+	// if the time differential is less than half a week, set top half a week
+	if timeDifferential < TwoWeeks/4 {
+		newTimeDiff = TwoWeeks / 4
+	}
+
+	// the new target is the previous target * time differential / two weeks
+	// newTarget := BitsToTarget(previousBits) * newTimeDiff / TwoWeeks
+	newTarget := new(big.Int).Mul(BitsToTarget(previousBits), big.NewInt(int64(newTimeDiff)))
+	newTarget = newTarget.Div(newTarget, big.NewInt(int64(TwoWeeks)))
+
+	// if the new target is bigger than the MAX_TARGET, to to MAX_TARGET
+	// if newTarget > MaxTarget {
+	// 	newTarget = MaxTarget
+	// }
+
+	// // convert to the new target to bits
+	// return TargetsToBits(uint32(newTarget))
+	if newTarget.Cmp(big.NewInt(int64(MaxTarget))) == 1 {
+		newTarget = big.NewInt(int64(MaxTarget))
+	}
+
+	return TargetToBits(newTarget)
+}
+
+// Convert a big int (32 byte) target into the corresponding 4 byte bits array
+func TargetToBits(target *big.Int) []byte {
+
+	// get raw bytes in big endian format
+	rawBytes := target.Bytes()
+
+	// strip leading 0's because they get in the way
+	// a sample target is:
+	// 0000000000000000007615000000000000000000000000000000000000000000
+	newRawBytes := make([]byte, 1)
+	for k, v := range rawBytes {
+		if k != 0x00 {
+			newRawBytes = rawBytes[v : len(rawBytes)-1]
+		}
+	}
+
+	// the bits format is a way to express large numbers with constrained space
+	// supporting both positive and negative numbers. If the first bit in the
+	// coefficient is a 1, the bits field is interpreted as a negative number
+	// however the target number itself is always positive
+
+	// holds a single byte which is the length of the hash. Range on the exponent
+	// is 0 < x < 32, so it will always be in the byte[3], the length we need.
+	exponent := make([]byte, 4)
+
+	// only 4 bytes long, but want to initialize it with a 0x00 in the front
+	// to start so we can use append make the byte array
+	coeffecient := make([]byte, 1)
+
+	// first check is if the number is negative or not
+	if newRawBytes[0] > 0x7f {
+		// number is positive
+
+		// exponent is the last byte of the bits array
+		binary.BigEndian.PutUint32(exponent, uint32(len(newRawBytes)+1))
+
+		// coefficient is a leading 0x00, plus the first 2 bytes of the hash target
+		// coefficient was already preloaded with a 0x00
+		coeffecient = append(exponent, newRawBytes[:2]...)
+	} else {
+		// number is negative
+
+		// exponent is the last byte of the bits array
+		binary.BigEndian.PutUint32(exponent, uint32(len(newRawBytes)))
+
+		// coefficient is now the first 3 bytes of the new target
+		coeffecient = newRawBytes[:3]
+	}
+
+	// need to reorder the cofficient to be little endian, (3 bytes) then the last
+	// byte is the exponent
+	newBits := append(ImmutableReorderBytes(coeffecient), exponent[len(exponent)-1])
+
+	// done
+	return newBits
 }

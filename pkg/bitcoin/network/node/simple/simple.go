@@ -146,6 +146,18 @@ func (n *Node) WaitFor(command messages.Command) (*messages.Message, error) {
 		var msg messages.Message
 		msg = verack
 		return &msg, nil
+	case messages.COMMAND_HEADERS:
+		// parse the headers into a headers object
+		headers, err := messages.ParseHeaders(bytes.NewReader(payload))
+		if err != nil {
+			return nil, err
+		}
+
+		// now cast it into its base interface
+		var msg messages.Message
+		msg = headers
+		return &msg, nil
+
 	default:
 		return nil, fmt.Errorf("unknown command matched %s", cmd)
 	}

@@ -157,33 +157,117 @@ func TestCalculatePowTarget(t *testing.T) {
 
 }
 
-func TestBlockDifficultyTarget(t *testing.T) {
+// func TestBlockDifficultyTarget(t *testing.T) {
+// 	lastBlockBytes, _ := hex.DecodeString("00000020fdf740b0e49cf75bb3d5168fb3586f7613dcc5cd89675b0100000000000000002e37b144c0baced07eb7e7b64da916cd3121f2427005551aeb0ec6a6402ac7d7f0e4235954d801187f5da9f5")
+// 	firstBlockBytes, _ := hex.DecodeString("000000201ecd89664fd205a37566e694269ed76e425803003628ab010000000000000000bfcade29d080d9aae8fd461254b041805ae442749f2a40100440fc0e3d5868e55019345954d80118a1721b2e")
+
+// 	lastBlock, err := ParseHeader(bytes.NewReader(lastBlockBytes))
+// 	if err != nil {
+// 		t.Fatalf("failed to parse last block")
+// 	}
+// 	firstBlock, err := ParseHeader(bytes.NewReader(firstBlockBytes))
+// 	if err != nil {
+// 		t.Fatalf("failed to parse last block")
+// 	}
+
+// 	timeDifferential := lastBlock.Timestamp - firstBlock.Timestamp
+
+// 	// make sure that it took more that 8 weeks to find the last 2015 blocks
+// 	// otherwise we need to decrease
+// 	if timeDifferential > TwoWeeks*4 {
+// 		timeDifferential = uint32(TwoWeeks) * 4
+// 	}
+
+// 	if timeDifferential < TwoWeeks/4 {
+// 		timeDifferential = uint32(TwoWeeks) / 4
+// 	}
+// }
+
+func TestBitsGeneration(t *testing.T) {
 	lastBlockBytes, _ := hex.DecodeString("00000020fdf740b0e49cf75bb3d5168fb3586f7613dcc5cd89675b0100000000000000002e37b144c0baced07eb7e7b64da916cd3121f2427005551aeb0ec6a6402ac7d7f0e4235954d801187f5da9f5")
 	firstBlockBytes, _ := hex.DecodeString("000000201ecd89664fd205a37566e694269ed76e425803003628ab010000000000000000bfcade29d080d9aae8fd461254b041805ae442749f2a40100440fc0e3d5868e55019345954d80118a1721b2e")
+	targetBytes, _ := hex.DecodeString("7615000000000000000000000000000000000000000000")
 
+	// parse the byte streams into blocks
 	lastBlock, err := ParseHeader(bytes.NewReader(lastBlockBytes))
 	if err != nil {
-		t.Fatalf("failed to parse last block")
+		t.Fatalf("failed to parse last block because %s", err.Error())
 	}
 	firstBlock, err := ParseHeader(bytes.NewReader(firstBlockBytes))
 	if err != nil {
-		t.Fatalf("failed to parse last block")
+		t.Fatalf("failed to parse firdst block because %s", err.Error())
 	}
 
+	// calculate the difference in time
 	timeDifferential := lastBlock.Timestamp - firstBlock.Timestamp
 
-	// make sure that it took more that 8 weeks to find the last 2015 blocks
-	// otherwise we need to decrease
+	// make sure it took more that 8 weeks to find the last 2015 blocks
+	// decrease the difficulty
 	if timeDifferential > TwoWeeks*4 {
 		timeDifferential = TwoWeeks * 4
 	}
-
 	if timeDifferential < TwoWeeks/4 {
 		timeDifferential = TwoWeeks / 4
 	}
 
-	oldTarget := lastBlock.Target()
-	newTarget := oldTarget.Mul(oldTarget, big.NewInt(int64(timeDifferential)))
-	fmt.Println(newTarget)
+	lastBlockTarget := lastBlock.Target()
 
+	newTarget := lastBlockTarget.Mul(lastBlockTarget, big.NewInt(int64(timeDifferential)))
+	newTarget = new(big.Int).Div(newTarget, big.NewInt(int64(TwoWeeks)))
+
+	fmt.Printf("%x\n", newTarget)
+
+	if !utils.CompareByteArrays(newTarget.Bytes(), targetBytes) {
+		t.Fatalf("expected byte array does not match the expected byte array")
+	}
+}
+
+func TestTarget(t *testing.T) {
+	blockRaw, _ := hex.DecodeString("020000208ec39428b17323fa0ddec8e887b4a7c53b8c0a0a220cfd0000000000000000005b0750fce0a889502d40508d39576821155e9c9e3f5c3157f961db38fd8b25be1e77a759e93c0118a4ffd71d")
+	reader := bytes.NewReader(blockRaw)
+	block, err := ParseHeader(reader)
+	if err != nil {
+		t.Fatalf("failed to parse the block header because %s", err.Error())
+	}
+	target := block.Target()
+	fmt.Println(target)
+}
+
+func TestDifficulty(t *testing.T) {
+	blockRaw, _ := hex.DecodeString("020000208ec39428b17323fa0ddec8e887b4a7c53b8c0a0a220cfd0000000000000000005b0750fce0a889502d40508d39576821155e9c9e3f5c3157f961db38fd8b25be1e77a759e93c0118a4ffd71d")
+
+	reader := bytes.NewReader(blockRaw)
+	block, err := ParseHeader(reader)
+	if err != nil {
+		t.Fatalf("failed to parse the block header because %s", err.Error())
+	}
+
+	if block.Difficulty().Cmp(big.NewInt(888171856257)) != 0 {
+		t.Fatal("block difficulty is incorrect")
+	}
+
+}
+
+func TestPow(t *testing.T) {
+	// good pow block
+	blockRaw, _ := hex.DecodeString("04000000fbedbbf0cfdaf278c094f187f2eb987c86a199da22bbb20400000000000000007b7697b29129648fa08b4bcd13c9d5e60abb973a1efac9c8d573c71c807c56c3d6213557faa80518c3737ec1")
+	reader := bytes.NewReader(blockRaw)
+	block, err := ParseHeader(reader)
+	if err != nil {
+		t.Fatalf("failed to parse the block header because %s", err.Error())
+	}
+	if !block.CheckPow() {
+		t.Fatal("failed to the validate the PoW for the first block")
+	}
+
+	// bad pow block
+	blockRaw, _ = hex.DecodeString("04000000fbedbbf0cfdaf278c094f187f2eb987c86a199da22bbb20400000000000000007b7697b29129648fa08b4bcd13c9d5e60abb973a1efac9c8d573c71c807c56c3d6213557faa80518c3737ec0")
+	reader = bytes.NewReader(blockRaw)
+	block, err = ParseHeader(reader)
+	if err != nil {
+		t.Fatalf("failed to parse the block header because %s", err.Error())
+	}
+	if block.CheckPow() {
+		t.Fatal("failed to the validate the PoW for the secons block")
+	}
 }

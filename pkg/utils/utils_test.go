@@ -112,3 +112,35 @@ func TestRedeemScriptHashing(t *testing.T) {
 func TestH160ToP2shAddress(t *testing.T) {
 
 }
+
+// func TestManualBits(t *testing.T) {
+// 	lastBlockBytes, _ := hex.DecodeString("00000020fdf740b0e49cf75bb3d5168fb3586f7613dcc5cd89675b0100000000000000002e37b144c0baced07eb7e7b64da916cd3121f2427005551aeb0ec6a6402ac7d7f0e4235954d801187f5da9f5")
+// 	firstBlockBytes, _ := hex.DecodeString("000000201ecd89664fd205a37566e694269ed76e425803003628ab010000000000000000bfcade29d080d9aae8fd461254b041805ae442749f2a40100440fc0e3d5868e55019345954d80118a1721b2e")
+// 	targetBytes, _ := hex.DecodeString("0000000000000000007615000000000000000000000000000000000000000000")
+
+// 	t.Logf("goal value is %x", targetBytes)
+
+// 	// parse the byte streams into blocks
+// 	lastBlock, err := block.ParseHeader(bytes.NewReader(lastBlockBytes))
+// 	if err != nil {
+// 		t.Fatalf("failed to parse last block because %s", err.Error())
+// 	}
+// 	firstBlock, err := block.ParseHeader(bytes.NewReader(firstBlockBytes))
+// 	if err != nil {
+// 		t.Fatalf("failed to parse firdst block because %s", err.Error())
+// 	}
+
+// 	// calculate the time differential
+// 	timeDifferential := lastBlock.Timestamp - firstBlock.Timestamp
+
+// 	// adjust the dificultuy
+// 	if timeDifferential > TwoWeeks*4 {
+// 		timeDifferential = TwoWeeks * 4
+// 	}
+// 	if timeDifferential < TwoWeeks/4 {
+// 		timeDifferential = TwoWeeks / 4
+// 	}
+
+// 	// newTarget := lastBlock.Target() * timeDifferential
+
+// }

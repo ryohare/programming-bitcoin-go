@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -11,7 +12,8 @@ import (
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
-const TwoWeeks = 60 * 60 * 24 * 14
+const TwoWeeks int = 60 * 60 * 24 * 14
+const MaxTarget uint32 = 0xffff*256 ^ (0x1d - 3)
 
 const lowestBitsStr = "ffff001d"
 const genesisBlockStr = "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c"
@@ -59,20 +61,6 @@ type BlockHeader struct {
 	Nonce []byte
 }
 
-// type Block struct {
-// }
-
-// // // Return the block has a byte arrasy
-// // func (b *Block) Bytes() []byte {
-
-// // }
-
-// // // Parses a block from a supplied byte stream
-// func Parse(reader *bytes.Reader) (*Block, error) {
-// 	// parse the block header
-// 	bh := BlockHeader{}
-// }
-
 // Parses a block header from a bytestream
 func ParseHeader(reader *bytes.Reader) (*BlockHeader, error) {
 	bh := &BlockHeader{}
@@ -88,6 +76,7 @@ func ParseHeader(reader *bytes.Reader) (*BlockHeader, error) {
 		return nil, err
 	}
 	bh.PreviousBlock = utils.ImmutableReorderBytes(prevBlockBytesLittleEndian)
+	fmt.Printf("%x\n", bh.PreviousBlock)
 
 	// next in the stream is the merkle root which like the previous block is
 	// 32 bytes stored on chain as little endian format
@@ -96,6 +85,7 @@ func ParseHeader(reader *bytes.Reader) (*BlockHeader, error) {
 		return nil, err
 	}
 	bh.MerkleRoot = utils.ImmutableReorderBytes(merkleRootBytesLittleEndian)
+	fmt.Printf("%x\n", bh.MerkleRoot)
 
 	// next off the stream is the time stamp. This is 4 bytes little endian stored
 	// on chain.
@@ -107,6 +97,7 @@ func ParseHeader(reader *bytes.Reader) (*BlockHeader, error) {
 		return nil, err
 	}
 	bh.Bits = bitsBytes
+	fmt.Printf("%x\n", bh.Bits)
 
 	// next is the Nonce which is 4 bytes long
 	nonceBytes, err := ioutil.ReadAll(io.LimitReader(reader, 4))
@@ -140,6 +131,28 @@ func (b *BlockHeader) SerializeHeader() ([]byte, error) {
 	return result, nil
 }
 
+// Checks the PoW for the block
+func (b *BlockHeader) CheckPow() bool {
+	s, err := b.SerializeHeader()
+	if err != nil {
+		return false
+	}
+
+	// Hash the serialization of the block
+	sha := utils.Hash256(s)
+
+	// okay, so the PoW is hard to find, it is a little endian big int
+	// so we need to reorder the bytes into big endian then set them
+	// to the big.int type
+	// proof := utils.LittleEndianToUInt64(bytes.NewReader(sha))
+	proof := new(big.Int)
+	proof.SetBytes(utils.ImmutableReorderBytes(sha))
+
+	// if the proof of work is less than the target, than
+	// it has been successfully verified
+	return proof.Cmp(b.Target()) == -1
+}
+
 // Return a hash of the block header
 func (b *BlockHeader) Hash() ([]byte, error) {
 	s, err := b.SerializeHeader()
@@ -166,4 +179,22 @@ func (b *BlockHeader) Bip141() bool {
 
 func (b *BlockHeader) Target() *big.Int {
 	return utils.BitsToTarget(b.Bits)
+}
+
+func (b *BlockHeader) Difficulty() *big.Int {
+	// start processing everyting as big ints.
+	// this will require getting everything
+	// normalized into big.int format
+	ss, _ := hex.DecodeString("ffff")
+	s := new(big.Int).SetBytes(ss)
+
+	// lowest = 0xffff * 256**(0x1d-3)
+	//			   s * t^(e)
+	t := big.NewInt(256)
+	e := big.NewInt(0x1d - 3)
+	t = new(big.Int).Exp(t, e, nil)
+
+	lowest := new(big.Int).Mul(s, t)
+
+	return new(big.Int).Div(lowest, b.Target())
 }
