@@ -12,7 +12,15 @@ import (
 
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 const TwoWeeks int = 60 * 60 * 24 * 14
-const MaxTarget int = 0xffff*256 ^ (0x1d - 3)
+
+func GetMaxTarget() *big.Int {
+	ff := big.NewInt(0xffff)
+	two := big.NewInt(256)
+	exp := big.NewInt(0x1d - 3)
+	two = new(big.Int).Exp(two, exp, nil)
+	ff = new(big.Int).Mul(ff, two)
+	return ff
+}
 
 // Double sha256 hash
 func Hash256(s []byte) []byte {
@@ -121,15 +129,38 @@ func ConvertIntToLittleEndian(i *big.Int) []byte {
 func LittleEndianToVarInt(reader *bytes.Reader) int {
 	littleEndian := make([]byte, 4)
 	reader.Read(littleEndian)
-	bigEndian, _ := binary.ReadUvarint(bytes.NewReader(littleEndian))
+	bigEndian, _ := binary.ReadVarint(bytes.NewReader(littleEndian))
 	return int(bigEndian)
+}
+
+func ReadVarIntFromBytes(reader *bytes.Reader) uint64 {
+
+	// read the first byte to see what the rest of the story is
+	i, _ := reader.ReadByte()
+
+	if i == 0xfd {
+		// 0xfd means the next two bytes are the number
+		// so read 2 bytes and convert from little endian
+		return uint64(LittleEndianToShort(reader))
+
+	} else if i == 0xfe {
+		// 4 bytes little endian
+		return uint64(LittleEndianToUInt32(reader))
+
+	} else if i == 0xff {
+		// 8 bytes little endian
+		return uint64(LittleEndianToUInt64(reader))
+	} else {
+		// i is just an integer, return as is
+		return uint64(i)
+	}
 }
 
 // Reads 4 bytes as a little endian integer and converts to a big endian integer
 func LittleEndianToShort(reader *bytes.Reader) int {
 	littleEndian := make([]byte, 2)
 	reader.Read(littleEndian)
-	bigEndian := binary.LittleEndian.Uint32(littleEndian)
+	bigEndian := binary.LittleEndian.Uint16(littleEndian)
 	return int(bigEndian)
 }
 
@@ -298,7 +329,6 @@ func BitsToTarget(bits []byte) *big.Int {
 
 	_target := new(big.Int).Exp(big.NewInt(256), big.NewInt(int64(exponent)-3), nil)
 	_target = new(big.Int).Mul(_target, big.NewInt(int64(coeffecient)))
-	fmt.Println(_target)
 	return _target
 }
 
@@ -387,23 +417,23 @@ func CalculateNewBits(previousBits []byte, timeDifferential int) []byte {
 	newTarget = newTarget.Div(newTarget, big.NewInt(int64(TwoWeeks)))
 
 	// if the new target is bigger than the MAX_TARGET, to to MAX_TARGET
-	// if newTarget > MaxTarget {
-	// 	newTarget = MaxTarget
-	// }
-
-	// // convert to the new target to bits
+	// convert to the new target to bits
 	// return TargetsToBits(uint32(newTarget))
-	if newTarget.Cmp(big.NewInt(int64(MaxTarget))) == 1 {
-		newTarget = big.NewInt(int64(MaxTarget))
+	if newTarget.Cmp(GetMaxTarget()) == 1 {
+		newTarget = GetMaxTarget()
 	}
+
+	fmt.Println(newTarget)
 
 	return TargetToBits(newTarget)
 }
 
 // Convert a big int (32 byte) target into the corresponding 4 byte bits array
 func TargetToBits(target *big.Int) []byte {
+	// buff := []byte{0x00}
 
 	// get raw bytes in big endian format
+	// rawBytes := append(target.Bytes(), buff...)
 	rawBytes := target.Bytes()
 
 	// strip leading 0's because they get in the way
@@ -411,8 +441,9 @@ func TargetToBits(target *big.Int) []byte {
 	// 0000000000000000007615000000000000000000000000000000000000000000
 	newRawBytes := make([]byte, 1)
 	for k, v := range rawBytes {
-		if k != 0x00 {
-			newRawBytes = rawBytes[v : len(rawBytes)-1]
+		if v != 0x00 {
+			newRawBytes = rawBytes[k:len(rawBytes)]
+			break
 		}
 	}
 
@@ -438,7 +469,7 @@ func TargetToBits(target *big.Int) []byte {
 
 		// coefficient is a leading 0x00, plus the first 2 bytes of the hash target
 		// coefficient was already preloaded with a 0x00
-		coeffecient = append(exponent, newRawBytes[:2]...)
+		coeffecient = append(newRawBytes[:2], 0x00)
 	} else {
 		// number is negative
 
@@ -447,11 +478,14 @@ func TargetToBits(target *big.Int) []byte {
 
 		// coefficient is now the first 3 bytes of the new target
 		coeffecient = newRawBytes[:3]
+		for i, j := 0, len(coeffecient)-1; i < j; i, j = i+1, j-1 {
+			coeffecient[i], coeffecient[j] = coeffecient[j], coeffecient[i]
+		}
 	}
 
 	// need to reorder the cofficient to be little endian, (3 bytes) then the last
 	// byte is the exponent
-	newBits := append(ImmutableReorderBytes(coeffecient), exponent[len(exponent)-1])
+	newBits := append(coeffecient, exponent[len(exponent)-1])
 
 	// done
 	return newBits

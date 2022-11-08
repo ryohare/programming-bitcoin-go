@@ -142,12 +142,12 @@ func TestGetAllHeaders(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		// create the get headers message with the starting block
 		// being the last parsed block
-		genesisBlockHash, err := genesisBlock.Hash()
+		prevHash, err := previous.Hash()
 		if err != nil {
-			t.Fatalf("failed to get the genesis block hash because %s", err.Error())
+			t.Fatalf("failed to get the previous blocks hash because %s", err.Error())
 		}
 
-		getHeadersMessage, err := messages.MakeGetHeaders(70015, 1, genesisBlockHash, nil)
+		getHeadersMessage, err := messages.MakeGetHeaders(70015, 1, prevHash, nil)
 		if err != nil {
 			t.Fatalf("failed to create the getheaders message because %s", err.Error())
 		}
@@ -183,6 +183,8 @@ func TestGetAllHeaders(t *testing.T) {
 				t.Logf("blockchain discontinuous at block %d", count)
 			}
 
+			fmt.Printf("%d: %x\n", count, prevHash)
+
 			// handle difficulty adjustment which is done e very
 			// 2016 blocks and is stored in the bits field of the block header
 			if count%2016 == 0 {
@@ -193,7 +195,7 @@ func TestGetAllHeaders(t *testing.T) {
 
 			// check that the bits match the expected bits
 			if !utils.CompareByteArrays(header.Bits, expectedBits) {
-				t.Fatalf("bits arrays are not equal")
+				t.Logf("%d: bad bits - %s", count, prevHash)
 			}
 
 			previous = header

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -76,7 +75,6 @@ func ParseHeader(reader *bytes.Reader) (*BlockHeader, error) {
 		return nil, err
 	}
 	bh.PreviousBlock = utils.ImmutableReorderBytes(prevBlockBytesLittleEndian)
-	fmt.Printf("%x\n", bh.PreviousBlock)
 
 	// next in the stream is the merkle root which like the previous block is
 	// 32 bytes stored on chain as little endian format
@@ -85,7 +83,6 @@ func ParseHeader(reader *bytes.Reader) (*BlockHeader, error) {
 		return nil, err
 	}
 	bh.MerkleRoot = utils.ImmutableReorderBytes(merkleRootBytesLittleEndian)
-	fmt.Printf("%x\n", bh.MerkleRoot)
 
 	// next off the stream is the time stamp. This is 4 bytes little endian stored
 	// on chain.
@@ -97,7 +94,6 @@ func ParseHeader(reader *bytes.Reader) (*BlockHeader, error) {
 		return nil, err
 	}
 	bh.Bits = bitsBytes
-	fmt.Printf("%x\n", bh.Bits)
 
 	// next is the Nonce which is 4 bytes long
 	nonceBytes, err := ioutil.ReadAll(io.LimitReader(reader, 4))

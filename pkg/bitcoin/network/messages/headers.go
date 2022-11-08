@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/block"
+	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
 type Headers struct {
@@ -18,10 +19,11 @@ const COMMAND_HEADERS Command = "headers"
 func ParseHeaders(reader *bytes.Reader) (*Headers, error) {
 	// first part of the stream is the number of the block headers
 	// which is stored as a type varint
-	numBlocks, err := binary.ReadVarint(io.ByteReader(reader))
-	if err != nil {
-		return nil, err
-	}
+	// numBlocks, err := binary.ReadVarint(io.ByteReader(reader))
+	numBlocks := int(utils.ReadVarIntFromBytes(reader))
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// all the block headers we've parsed
 	var bhs []*block.BlockHeader
@@ -29,7 +31,7 @@ func ParseHeaders(reader *bytes.Reader) (*Headers, error) {
 	// range over the message response and parse each header information
 	// from the getblocks response. After each block is a varint which holds
 	// the number of transactions in the block
-	for i := 0; int64(i) < numBlocks; i++ {
+	for i := 0; i < numBlocks; i++ {
 		b, err := block.ParseHeader(reader)
 		bhs = append(bhs, b)
 		if err != nil {
