@@ -154,6 +154,6 @@ func TestMerkleParentLevel(t *testing.T) {
 	target, _ := hex.DecodeString("acbcab8bcc1af95d8d563b77d24c3d19b18f1486383d75a5085c4e86c86beed6")
 
 	if !CompareByteArrays(target, txHashesBytes[0]) {
-		t.Fatalf("byte arrays do not match %s vs %s",target, txHashesBytes[[0]])
+		t.Fatalf("byte arrays do not match %s vs %s", target, txHashesBytes[0])
 	}
 }
