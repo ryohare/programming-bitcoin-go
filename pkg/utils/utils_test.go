@@ -193,5 +193,4 @@ func TestMerkleRoot(t *testing.T) {
 	if !CompareByteArrays(target, root) {
 		t.Fatalf("byte arrays are not equal %s vs %s", target, root)
 	}
-
 }

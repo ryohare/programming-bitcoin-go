@@ -194,3 +194,7 @@ func (b *BlockHeader) Difficulty() *big.Int {
 
 	return new(big.Int).Div(lowest, b.Target())
 }
+
+func (b *BlockHeader) VerifyMerkleRoot(hashes [][]byte) bool {
+	return verifyMerkleRoot(hashes, b.MerkleRoot)
+}
