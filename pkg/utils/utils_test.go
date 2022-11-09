@@ -109,38 +109,51 @@ func TestRedeemScriptHashing(t *testing.T) {
 	}
 
 }
-func TestH160ToP2shAddress(t *testing.T) {
 
+func decodeHexString(str string, t *testing.T) []byte {
+	hexBytes, err := hex.DecodeString(str)
+	if err != nil {
+		t.Fatalf("failed to decode string because %s", err.Error())
+	}
+	return hexBytes
 }
 
-// func TestManualBits(t *testing.T) {
-// 	lastBlockBytes, _ := hex.DecodeString("00000020fdf740b0e49cf75bb3d5168fb3586f7613dcc5cd89675b0100000000000000002e37b144c0baced07eb7e7b64da916cd3121f2427005551aeb0ec6a6402ac7d7f0e4235954d801187f5da9f5")
-// 	firstBlockBytes, _ := hex.DecodeString("000000201ecd89664fd205a37566e694269ed76e425803003628ab010000000000000000bfcade29d080d9aae8fd461254b041805ae442749f2a40100440fc0e3d5868e55019345954d80118a1721b2e")
-// 	targetBytes, _ := hex.DecodeString("0000000000000000007615000000000000000000000000000000000000000000")
+func TestMerkleParentLevel(t *testing.T) {
+	txHashes := []string{
+		"c117ea8ec828342f4dfb0ad6bd140e03a50720ece40169ee38bdc15d9eb64cf5",
+		"c131474164b412e3406696da1ee20ab0fc9bf41c8f05fa8ceea7a08d672d7cc5",
+		"f391da6ecfeed1814efae39e7fcb3838ae0b02c02ae7d0a5848a66947c0727b0",
+		"3d238a92a94532b946c90e19c49351c763696cff3db400485b813aecb8a13181",
+		"10092f2633be5f3ce349bf9ddbde36caa3dd10dfa0ec8106bce23acbff637dae",
+		"7d37b3d54fa6a64869084bfd2e831309118b9e833610e6228adacdbd1b4ba161",
+		"8118a77e542892fe15ae3fc771a4abfd2f5d5d5997544c3487ac36b5c85170fc",
+		"dff6879848c2c9b62fe652720b8df5272093acfaa45a43cdb3696fe2466a3877",
+		"b825c0745f46ac58f7d3759e6dc535a1fec7820377f24d4c2c6ad2cc55c0cb59",
+		"95513952a04bd8992721e9b7e2937f1c04ba31e0469fbe615a78197f68f52b7c",
+		"2e6d722e5e4dbdf2447ddecc9f7dabb8e299bae921c99ad5b0184cd9eb8e5908",
+		"b13a750047bc0bdceb2473e5fe488c2596d7a7124b4e716fdd29b046ef99bbf0",
+	}
 
-// 	t.Logf("goal value is %x", targetBytes)
+	txHashesBytes := make([][]byte, 0, len(txHashes))
+	for _, txHash := range txHashes {
+		txHashesBytes = append(txHashesBytes, decodeHexString(txHash, t))
+	}
 
-// 	// parse the byte streams into blocks
-// 	lastBlock, err := block.ParseHeader(bytes.NewReader(lastBlockBytes))
-// 	if err != nil {
-// 		t.Fatalf("failed to parse last block because %s", err.Error())
-// 	}
-// 	firstBlock, err := block.ParseHeader(bytes.NewReader(firstBlockBytes))
-// 	if err != nil {
-// 		t.Fatalf("failed to parse firdst block because %s", err.Error())
-// 	}
+	// to test, we need to boil it down until there is only 1 hash left
+	for {
+		if len(txHashesBytes) == 1 {
+			break
+		}
+		var err error
+		txHashesBytes, err = MerkleParentLevel(txHashesBytes)
+		if err != nil {
+			t.Fatalf("failed to make merkle parent level because %s", err.Error())
+		}
+	}
 
-// 	// calculate the time differential
-// 	timeDifferential := lastBlock.Timestamp - firstBlock.Timestamp
+	target, _ := hex.DecodeString("acbcab8bcc1af95d8d563b77d24c3d19b18f1486383d75a5085c4e86c86beed6")
 
-// 	// adjust the dificultuy
-// 	if timeDifferential > TwoWeeks*4 {
-// 		timeDifferential = TwoWeeks * 4
-// 	}
-// 	if timeDifferential < TwoWeeks/4 {
-// 		timeDifferential = TwoWeeks / 4
-// 	}
-
-// 	// newTarget := lastBlock.Target() * timeDifferential
-
-// }
+	if !CompareByteArrays(target, txHashesBytes[0]) {
+		t.Fatalf("byte arrays do not match %s vs %s",target, txHashesBytes[[0]])
+	}
+}

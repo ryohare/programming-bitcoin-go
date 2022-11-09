@@ -490,3 +490,42 @@ func TargetToBits(target *big.Int) []byte {
 	// done
 	return newBits
 }
+
+// Take the binary hashes and calculates the hash256
+func MerkleParent(h1, h2 []byte) []byte {
+	// concatenate the hashes together
+	h := append(h1, h2...)
+
+	// do a hash256 of the concatenated byte array
+	// and return
+	return Hash256(h)
+}
+
+// Takes in an array of byte arrays (tx hashes) and
+// returns a list that is 1/2 the length
+func MerkleParentLevel(hashes [][]byte) ([][]byte, error) {
+	// make sure we have more than 1 element in the array
+	if len(hashes) == 1 {
+		return nil, fmt.Errorf("length of hashes is 1")
+	}
+
+	// make sure the length of the hashes is even. If the
+	// array is odd length, add the last element to the list
+	if len(hashes)%2 == 1 {
+		// odd
+		hashes = append(hashes, hashes[len(hashes)-1])
+	}
+
+	// parent level will be an array of byte arrays
+	parentLevel := make([][]byte, 0, len(hashes)/2)
+
+	// calculate the merkle parent for each hash
+	// in the ordered list, which will result in an
+	// array that is 1/2 the size of the passed in one.
+	for i := 0; i < len(hashes); i += 2 {
+		parent := MerkleParent(hashes[i], hashes[i+1])
+		parentLevel = append(parentLevel, parent)
+	}
+
+	return parentLevel, nil
+}
