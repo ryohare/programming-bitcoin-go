@@ -529,3 +529,24 @@ func MerkleParentLevel(hashes [][]byte) ([][]byte, error) {
 
 	return parentLevel, nil
 }
+
+// Takes a list of binary hashes and returns the merkle root
+func MerkleRoot(hashes [][]byte) ([]byte, error) {
+	currentLevel := make([][]byte, len(hashes))
+	copy(currentLevel, hashes)
+
+	// keep hashing until we have a length of 1
+	for {
+		if len(currentLevel) == 1 {
+			break
+		}
+		var err error
+		currentLevel, err = MerkleParentLevel(currentLevel)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// only element left in the array is the merkle root
+	return currentLevel[0], nil
+}

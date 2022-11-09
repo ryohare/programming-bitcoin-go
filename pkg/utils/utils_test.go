@@ -157,3 +157,41 @@ func TestMerkleParentLevel(t *testing.T) {
 		t.Fatalf("byte arrays do not match %s vs %s", target, txHashesBytes[0])
 	}
 }
+
+func TestMerkleRoot(t *testing.T) {
+	txHashes := []string{
+		"42f6f52f17620653dcc909e58bb352e0bd4bd1381e2955d19c00959a22122b2e",
+		"94c3af34b9667bf787e1c6a0a009201589755d01d02fe2877cc69b929d2418d4",
+		"959428d7c48113cb9149d0566bde3d46e98cf028053c522b8fa8f735241aa953",
+		"a9f27b99d5d108dede755710d4a1ffa2c74af70b4ca71726fa57d68454e609a2",
+		"62af110031e29de1efcad103b3ad4bec7bdcf6cb9c9f4afdd586981795516577",
+		"766900590ece194667e9da2984018057512887110bf54fe0aa800157aec796ba",
+		"e8270fb475763bc8d855cfe45ed98060988c1bdcad2ffc8364f783c98999a208",
+	}
+
+	txHashesBytes := make([][]byte, 0, len(txHashes))
+	for _, txHash := range txHashes {
+		txHashesBytes = append(txHashesBytes, decodeHexString(txHash, t))
+	}
+
+	// all the hashes are stored littlen endian, so we need to reorder the byte arary
+	for _, txHash := range txHashesBytes {
+		MutableReorderBytes(txHash)
+	}
+
+	// Get the merkle root
+	root, err := MerkleRoot(txHashesBytes)
+	if err != nil {
+		t.Fatalf("failed to get merkle root because %s", err.Error())
+	}
+
+	// need to reorder the root into little endian for evaulation
+	MutableReorderBytes(root)
+
+	target, _ := hex.DecodeString("654d6181e18e4ac4368383fdc5eead11bf138f9b7ac1e15334e4411b3c4797d9")
+
+	if !CompareByteArrays(target, root) {
+		t.Fatalf("byte arrays are not equal %s vs %s", target, root)
+	}
+
+}
