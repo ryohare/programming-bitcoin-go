@@ -36,7 +36,7 @@ type MerkleBlock struct {
 	// Number of hashes included in the block
 	NumberOfHashes uint64
 
-	// Flag bits
+	// the flags field gives information about where the hashes go within the Merkle tree
 	Flags []byte
 }
 
@@ -114,6 +114,8 @@ func ParseMerkleBlock(reader *bytes.Reader) (*MerkleBlock, error) {
 	flagsLen := utils.ReadVarIntFromBytes(reader)
 
 	// finally read in the flags byte array
+	// the flags field gives information about where the hashes
+	// go within the Merkle tree
 	flags, err := ioutil.ReadAll(io.LimitReader(reader, int64(flagsLen)))
 	if err != nil {
 		return nil, err
