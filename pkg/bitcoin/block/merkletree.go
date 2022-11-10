@@ -41,7 +41,7 @@ func (m *MerkleTree) GetMaxDepth() int {
 	return int(math.Ceil(math.Log2(float64(m.Total))))
 }
 
-func Make(total int) *MerkleTree {
+func MakeMerkleTree(total int) *MerkleTree {
 	mt := &MerkleTree{}
 
 	mt.Total = total

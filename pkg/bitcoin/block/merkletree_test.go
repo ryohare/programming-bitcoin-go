@@ -8,7 +8,7 @@ import (
 )
 
 func TestMake(t *testing.T) {
-	if Make(16) == nil {
+	if MakeMerkleTree(16) == nil {
 		t.Fatal("failed to make merkle tree")
 	}
 }
@@ -34,7 +34,7 @@ func TestMerkleTreeRaw(t *testing.T) {
 	}
 
 	// create the tree
-	tree := Make(len(hashes))
+	tree := MakeMerkleTree(len(hashes))
 
 	hashesBytes := make([][]byte, 0, len(hashes))
 
@@ -88,7 +88,7 @@ func TestMerkleTreeNormal(t *testing.T) {
 	}
 
 	// load the first parent level of the tree
-	tree := Make(len(hashes))
+	tree := MakeMerkleTree(len(hashes))
 
 	hashesBytes := make([][]byte, 0, len(hashes))
 

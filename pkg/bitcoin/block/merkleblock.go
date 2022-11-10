@@ -147,3 +147,26 @@ func verifyMerkleRoot(hashes [][]byte, merkleRoot []byte) bool {
 func (m *MerkleBlock) VerifyMerkleRoot() bool {
 	return verifyMerkleRoot(m.TxHashes, m.MerkleRoot)
 }
+
+func (m *MerkleBlock) IsValid() bool {
+
+	// parse the bits filed into a byte array
+	flagBits := utils.BytesToBitField(m.Flags)
+
+	// reorder the hashes
+	newHashes := make([][]byte, len(m.TxHashes))
+	for _, hash := range m.TxHashes {
+		newHashes = append(newHashes, utils.ImmutableReorderBytes(hash))
+	}
+
+	// Construct the merkle tree for the block
+	tree := MakeMerkleTree(m.Total)
+
+	// populate the tree with the hashes
+	tree.PopulateTree(flagBits, newHashes)
+
+	// validate the root of the tree is the same root as the block
+	root := utils.ImmutableReorderBytes(tree.Root())
+
+	return utils.CompareByteArrays(root, m.MerkleRoot)
+}
