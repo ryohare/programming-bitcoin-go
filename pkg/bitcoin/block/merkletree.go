@@ -33,8 +33,6 @@ func (m *MerkleTree) GetMaxDepth() int {
 
 	// Since we half at every level, we use the log2 of the number of leaves
 	// This gets rounded up because you cant have 1/2 a level after all.
-	//
-	//
 	return int(math.Ceil(math.Log2(float64(m.Total))))
 }
 
@@ -68,4 +66,47 @@ func Make(total int) *MerkleTree {
 	mt.CurrentIndex = 0
 
 	return mt
+}
+
+func (m *MerkleTree) Up() {
+	m.CurrentDepth -= 1
+	m.CurrentIndex /= 2
+}
+
+func (m *MerkleTree) Left() {
+	m.CurrentDepth += 1
+	m.CurrentIndex *= 2
+}
+
+func (m *MerkleTree) Right() {
+	m.CurrentDepth += 1
+	m.CurrentIndex = m.CurrentIndex*2 + 1
+}
+
+func (m *MerkleTree) Root() []byte {
+	return m.Nodes[0][0]
+}
+
+func (m *MerkleTree) SetCurrentNode(val []byte) {
+	m.Nodes[m.CurrentDepth][m.CurrentIndex] = val
+}
+
+func (m *MerkleTree) GeCurrentNode() []byte {
+	return m.Nodes[m.CurrentDepth][m.CurrentIndex]
+}
+
+func (m *MerkleTree) GetLeftNode() []byte {
+	return m.Nodes[m.CurrentDepth+1][m.CurrentIndex*2]
+}
+
+func (m *MerkleTree) GetRightNode() []byte {
+	return m.Nodes[m.CurrentDepth+1][m.CurrentIndex*2+1]
+}
+
+func (m *MerkleTree) IsLeaf() bool {
+	return m.CurrentDepth == m.MaxDepth
+}
+
+func (m *MerkleTree) RightExists() bool {
+	return len(m.Nodes[m.CurrentDepth+1]) > m.CurrentIndex*2+1
 }
