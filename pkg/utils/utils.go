@@ -560,3 +560,16 @@ func IsNull(b []byte) bool {
 
 	return true
 }
+
+func BytesToBitField(b []byte) []byte {
+	flagBits := []byte{}
+
+	for _, _b := range b {
+		for i := 0; i < 8; i++ {
+			flagBits = append(flagBits, _b&1)
+			_b >>= 1
+		}
+	}
+
+	return flagBits
+}

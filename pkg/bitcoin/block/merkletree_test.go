@@ -114,10 +114,17 @@ func TestMerkleTreeNormal(t *testing.T) {
 
 			if utils.IsNull(leftHash) {
 				tree.Left()
-			} else if utils.IsNull(rightHash) {
-				tree.Right()
+			} else if tree.RightExists() {
+				if utils.IsNull(rightHash) {
+					tree.Right()
+				} else {
+					// make the merkle parent for the specified node
+					tree.SetCurrentNode(utils.MerkleParent(leftHash, rightHash))
+
+					// move up a level
+					tree.Up()
+				}
 			} else {
-				// make the merkle parent for the specified node
 				tree.SetCurrentNode(utils.MerkleParent(leftHash, rightHash))
 
 				// move up a level
@@ -125,5 +132,4 @@ func TestMerkleTreeNormal(t *testing.T) {
 			}
 		}
 	}
-
 }
