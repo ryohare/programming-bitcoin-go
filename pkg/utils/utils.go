@@ -550,3 +550,13 @@ func MerkleRoot(hashes [][]byte) ([]byte, error) {
 	// only element left in the array is the merkle root
 	return currentLevel[0], nil
 }
+
+func IsNull(b []byte) bool {
+	for _, v := range b {
+		if v != 0x00 {
+			return false
+		}
+	}
+
+	return true
+}

@@ -110,3 +110,15 @@ func (m *MerkleTree) IsLeaf() bool {
 func (m *MerkleTree) RightExists() bool {
 	return len(m.Nodes[m.CurrentDepth+1]) > m.CurrentIndex*2+1
 }
+
+func (m *MerkleTree) RootIsEmpty() bool {
+	b := m.Root()
+
+	for _, v := range b {
+		if v != 0x00 {
+			return false
+		}
+	}
+
+	return true
+}
