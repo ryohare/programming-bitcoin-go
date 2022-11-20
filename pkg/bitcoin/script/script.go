@@ -12,6 +12,8 @@ import (
 	"github.com/ryohare/programming-bitcoin-go/pkg/utils"
 )
 
+// TODO - Define a script interface and have multiple implementions of the script interface
+
 type Command struct {
 	// raw bytes for the command
 	Bytes []byte
@@ -284,7 +286,7 @@ func (s Script) Serialize() []byte {
 	return fullScript
 }
 
-func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) bool {
+func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64, witnesses [][]byte) bool {
 
 	// Commands list will change so we need to make a local copy
 	cmds := s.Commands
@@ -546,6 +548,18 @@ func (s *Script) Evaluate(z *big.Int, locktime, sequence, version uint64) bool {
 				// with more elements in the cmds array
 				cmds = append(cmds, script.Commands...)
 			}
+
+			// check for the segwit pattern for p2wpkh
+			// in this case, there is only one witness element, the signature
+			// which we can safely index at 0
+			if stack.Len() == 2 && len(stack.Elements[0].Bytes) == 1 && len(stack.Elements[1].Bytes) == 20 {
+				// segwit patterm match found.
+				h160 := stack.Pop()
+				cmds = append(cmds, Command{
+					Bytes: witnesses[0],
+				})
+				cmds = append(cmds, MakeP2wpkh(h160.Bytes).Commands...)
+			}
 		}
 	}
 	return result
@@ -584,7 +598,7 @@ func (s Script) IsP2pkhScriptPubkey() bool {
 
 // Checks if the pubkey for the script is P2SH
 func (s Script) IsP2shScriptPubkey() bool {
-	// This will check if the list of commands helpd by the script
+	// This will check if the list of commands held by the script
 	// match those for a P2SH. Thias should be exactly 3 commands
 	// OP_HASH160
 	// Script Pubkey
@@ -605,6 +619,45 @@ func (s Script) IsP2shScriptPubkey() bool {
 	return true
 }
 
+// Checks if the pubkey for the script is a p2wpkh
+func (s Script) IsP2wpkhScriptPubkey() bool {
+	// this will check if the script is a
+	// p2wpkh type script. The signature it
+	// will look for is:
+	// lenght=2
+	// OP_0
+	// <20-byte hash160(witnessProgram)
+
+	// make sure we have the correct lenght
+	if len(s.Commands) != 2 {
+		return false
+	}
+
+	// make sure its an opcode we are parsing
+	if !s.Commands[0].OpCode {
+		return false
+	}
+
+	// make sure its thes correct opcode
+	if s.Commands[0].Bytes[0] != byte(opcodes.OP_0) {
+		return false
+	}
+
+	// make sure its a data element
+	if s.Commands[1].OpCode {
+		return false
+	}
+
+	// make sure the length is 20, if its 32, is a p2wsh
+	if len(s.Commands[1].Bytes) != 20 {
+		return false
+	}
+
+	// if we passed all the checks, it is a p2wpkh
+	return true
+}
+
+// Return a p2pkh script
 func MakeP2pkh(h160 []byte) *Script {
 	cmds := []Command{}
 
@@ -630,6 +683,32 @@ func MakeP2pkh(h160 []byte) *Script {
 	cmds = append(cmds, Command{
 		Bytes:  []byte{byte(opcodes.OP_CHECKSIG)},
 		OpCode: true,
+	})
+
+	return &Script{Commands: cmds}
+}
+
+func Makep2sh(h160 []byte) *Script {
+	// TODO - Implement this
+	return nil
+}
+
+// Return a p2wpkh script
+func MakeP2wpkh(h160 []byte) *Script {
+	cmds := []Command{}
+
+	// sequence for withness programs of p2wpkh are:
+	// OP_0
+	// <20-byte hash160(program)>
+
+	cmds = append(cmds, Command{
+		Bytes:  []byte{byte(opcodes.OP_0)},
+		OpCode: true,
+	})
+
+	cmds = append(cmds, Command{
+		Bytes:  h160,
+		OpCode: false,
 	})
 
 	return &Script{Commands: cmds}

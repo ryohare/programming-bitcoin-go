@@ -183,7 +183,7 @@ func TestGetAllHeaders(t *testing.T) {
 				t.Logf("blockchain discontinuous at block %d", count)
 			}
 
-			fmt.Printf("%d: %x\n", count, prevHash)
+			// fmt.Printf("%d: %x\n", count, prevHash)
 
 			// handle difficulty adjustment which is done e very
 			// 2016 blocks and is stored in the bits field of the block header
@@ -195,7 +195,7 @@ func TestGetAllHeaders(t *testing.T) {
 
 			// check that the bits match the expected bits
 			if !utils.CompareByteArrays(header.Bits, expectedBits) {
-				t.Logf("%d: bad bits - %s", count, prevHash)
+				t.Logf("%d: bad bits - %x", count, prevHash)
 			}
 
 			previous = header

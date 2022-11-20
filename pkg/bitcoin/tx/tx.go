@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"math/big"
 
 	"github.com/ryohare/programming-bitcoin-go/pkg/bitcoin/script"
@@ -20,12 +22,37 @@ const (
 
 type Transaction struct {
 	// 4 bytes little endian
-	Version       int
-	Inputs        []*TransactionInput
-	Outputs       []*TransactionOutput
-	Locktime      int
-	Testnet       bool
+	Version int
+
+	// Transaction inputs which map to previousOuts from existing transactions
+	Inputs []*TransactionInput
+
+	// New Utxos being created
+	Outputs []*TransactionOutput
+
+	// Locktime afte which the transaction can be spend
+	Locktime int
+
+	// Internal Testnet flag
+	Testnet bool
+
+	// Serlaization holder - Not Used - Use tx.Serialize() to get the serlaization
 	Serialization []byte
+
+	// Internal Segwit flag
+	Segwit bool
+
+	// Withness programs
+	Witness [][]byte
+
+	// Hash of the outputs for "this" transaction
+	hashOutputs []byte
+
+	// hash of the outputs for the previous transactions (utxos)
+	hashPrevOuts []byte
+
+	// hash of the previous outputs sequences (utxos)
+	hashSequence []byte
 }
 
 func (t Transaction) String() string {
@@ -44,8 +71,80 @@ func (t Transaction) String() string {
 	return retStr
 }
 
+// Serialize a segwit transaction. Declared as private because we want the main entrypoint
+// to be the serialize function for all serialization requests of this struct
+func (t Transaction) serializeSegwit() []byte {
+	// setup the var that will be the serialization
+	var tx []byte
+
+	// serialize the version number first
+	tx = append(tx, utils.IntToLittleEndianBytes(t.Version)...)
+
+	// add in the segwit marker and flag
+	tx = append(tx, []byte{0x00, 0x01}...)
+
+	// now we encode the number of inputs that are in the transaction
+	// which gets encoded as a varint
+	tx = append(tx, utils.IntToVarintBytes(len(t.Inputs))...)
+
+	// loop over all the inputs and append their individual serialiations
+	for _, txin := range t.Inputs {
+		tx = append(tx, txin.Serialize()...)
+	}
+
+	// next are the outputs. Again, like the inputs, firs element is the
+	// length which is encoded as var int
+	tx = append(tx, utils.IntToVarintBytes(len(t.Outputs))...)
+
+	// serialize each outut
+	for _, txout := range t.Outputs {
+		tx = append(tx, txout.Serialize()...)
+	}
+
+	// now the segwit magic. We need to add in the witness program for each
+	// input, which map to prevOuts or Outpoints we are consuming
+	for _, txin := range t.Inputs {
+
+		// first element is the number of witness programs we have.
+		// this is encoded as little endian
+		tx = append(tx, utils.IntToLittleEndianBytes(len(txin.Witness))...)
+
+		// iterate over the witness programs and add them into the serialization
+		for _, witness := range t.Witness {
+
+			// based on the parse function, we check if 0x00 was pushed into the witness array
+			// in the python code, they do this by checking if the datatype is an int which
+			// doesnt fly in golang because everything is a []byte here.
+			// Update: Pulled out the 0x00 check and am just checking if it is of length 1,
+			// indicating it is uint8
+			if len(witness) == 1 /*&& witness[0] == 0x00*/ {
+				tx = append(tx, utils.UInt8ToLittleEndianBytes(uint8(witness[0])))
+			} else {
+				// else its a varint that needs to encoded as the length of the withness program
+				// followed by the program itself
+				tx = append(tx, utils.IntToVarintBytes(len(witness))...)
+				tx = append(tx, witness...)
+			}
+		}
+	}
+
+	// now just follow the normal serialization the rest of the way
+	// serialize locktime as a little endian int
+	tx = append(tx, utils.IntToLittleEndianBytes(t.Locktime)...)
+
+	return tx
+}
+
 // Returns the byte serialization of the transaction
 func (t Transaction) Serialize() []byte {
+
+	// if the transaction is segwit, it needs to be serialized differently
+	// to include the witness program for each input as well.
+	if t.Segwit {
+		return t.serializeSegwit()
+	}
+
+	// setup the var that will be the serialization
 	var tx []byte
 
 	// serialize the version number first
@@ -73,20 +172,125 @@ func (t Transaction) Serialize() []byte {
 	return tx
 }
 
+// Return the transaction Id (hash) of the transaction as a byte array
 func (t Transaction) Hash() []byte {
+
+	// segwit sesrialization is the same as the legacy, the main swithc on segwit
+	// is handled in the Serialize function, so we can call this just as is.
 	serial := t.Serialize()
 	return utils.MutableReorderBytes(utils.Hash256(serial))
 }
 
+// Returns the transaction Id as a string
 func (t Transaction) ID() string {
 	return string(t.Hash())
 }
 
+// Parse a segwit transaction
+func ParseSegwit(serialization []byte) (*Transaction, error) {
+	t := &Transaction{}
+
+	// create the reader
+	reader := bytes.NewReader(serialization)
+
+	// read the segwit version to know what we are dealing with.
+	// version = 0 == normal segwit
+	// version = 1 == taproot - sir not appearing in this picture
+	t.Version = utils.LittleEndianToInt(reader)
+
+	// read in the segwit marker and flag which are the next 2 bytes
+	segwitMarker, _ := reader.ReadByte()
+	segwitFlag, _ := reader.ReadByte()
+	if segwitMarker != 0x00 && segwitFlag != 0x01 {
+		return nil, fmt.Errorf("segwith markers are not correct. Received %x %x", segwitMarker, segwitFlag)
+	}
+
+	//
+	// Parse the inputs to the transaction
+	//
+	// number of inputs is the next item in the serialization of the transaction on the wire
+	numOfInputs, _ := binary.ReadUvarint(reader)
+	// iterate over the inputs and append them to the inputs list
+	for i := 0; i < int(numOfInputs); i++ {
+		ip := ParseTransactionInput(reader)
+		t.Inputs = append(t.Inputs, ip)
+	}
+
+	//
+	// Parse the outputs
+	//
+	// first is the varint for the length fof the inputs
+	numOfOutputs, _ := binary.ReadUvarint(reader)
+
+	// iterate over the outputs and append them to the outputs list
+	for i := 0; i < int(numOfOutputs); i++ {
+		op := ParseTransactionOutput(reader)
+		t.Outputs = append(t.Outputs, op)
+	}
+
+	//
+	// Parse the witness program
+	//
+	// each input needs a witness in order to spend it in "this" transaction
+	for i, _ := range t.Inputs {
+		// read in the number of witness items
+		// it can be variable in the case of multisig stuff
+		// like a set of signatures, or something else
+		numWitnesses := utils.ReadVarIntFromBytes(reader)
+
+		// witnesses will be an array of byte arrays
+		witnessess := [][]byte{}
+
+		// iterate over the witness programs
+		for i := 0; i < int(numWitnesses); i++ {
+			witnessLength := utils.ReadVarIntFromBytes(reader)
+
+			// if the witness program is nothing, push in a null byte
+			if witnessLength == 0 {
+				witnessess = append(witnessess, []byte{0x00})
+			}
+
+			// otherwise, read in N bytes as the witness program
+			witnessProgram, _ := ioutil.ReadAll(io.LimitReader(reader, int64(witnessLength)))
+
+			// add in the just parsed withness program
+			witnessess = append(witnessess, witnessProgram)
+		}
+
+		// witness data is coupled with the input
+		t.Inputs[i].Witness = witnessess
+	}
+
+	//
+	// Parse the locktime
+	//
+	t.Locktime = utils.LittleEndianToInt(reader)
+
+	return t, nil
+}
+
+// Parse a transaction from a byte stream
 func ParseTransaction(serialization []byte) *Transaction {
 	t := &Transaction{}
 
 	// make a reader to easily read in the serialization
 	reader := bytes.NewReader(serialization)
+
+	// segwith bolt-on, read 4 bytes and ignore and look for
+	// the segwit marker in the 5th byte of the transaction
+	for i := 0; i < 4; i++ {
+		reader.ReadByte()
+	}
+
+	// now read for the segwith marker, if we find it, go the special
+	// segwit parser, otherwise, reset the stream and continue with
+	// the originally defined processing path
+	segwit, _ := reader.ReadByte()
+	if segwit == 0x00 {
+		ParseSegwit(serialization)
+	} else {
+		reader.Reset(serialization)
+	}
 
 	//
 	// parse the version
@@ -248,22 +452,135 @@ func (t Transaction) SigHash(inputIndex int, redeemScript *script.Script, sigHas
 	return new(big.Int).SetBytes(h256), nil
 }
 
+func (t Transaction) HashPrevOuts() []byte {
+	// if we have not set the prevOuts for this transaction, then we need to set them
+	if len(t.hashPrevOuts) == 0 {
+		allPrevOuts := []byte{}
+		allSequence := []byte{}
+
+		// construct a byte array of format
+		// prevHash1 + length1 ... prevHashN + lengthN
+		for _, txin := range t.Inputs {
+			allPrevOuts = append(
+				allPrevOuts,
+				utils.ImmutableReorderBytes(txin.PrevTx)...,
+			)
+			allPrevOuts = append(
+				allPrevOuts,
+				utils.IntToLittleEndianBytes(txin.PrevIndex)...,
+			)
+			allSequence = append(
+				allSequence,
+				utils.IntToLittleEndianBytes(txin.Sequence)...,
+			)
+		}
+
+		// we now have two byte arrays, one with the serialization of all the txins hash + index
+		// and one for all the sequences
+
+		// Set self to the values
+		t.hashPrevOuts = utils.Hash256(allPrevOuts)
+		t.hashSequence = utils.Hash256(allSequence)
+	}
+
+	return t.hashPrevOuts
+}
+
+func (t Transaction) HashOutputs() []byte {
+	if len(t.hashPrevOuts) == 0 {
+		var allOutputs []byte
+		for _, txout := range t.Outputs {
+			allOutputs = append(allOutputs, txout.Serialize()...)
+		}
+		t.hashOutputs = allOutputs
+	}
+
+	return t.hashOutputs
+}
+
+// Returns the big.Int representation of the hash that needs to be signed for the index inputIndex
+// Signing the inputs is unlocking the prevOut from the previous transaction
+func (t Transaction) SigHashSegwit(inputIndex int, redeemScript, witnessScript *script.Script) (*big.Int, error) {
+
+	// TODO check bounds on the inputIndex - Probably should be defensivily programming everywhere
+	txin := t.Inputs[inputIndex]
+
+	// This is all done per BIP143 Spec which I just dupped with the python code is doing
+	var s []byte
+	s = utils.IntToLittleEndianBytes(t.Version)
+	s = append(s, t.hashPrevOuts...)
+	s = append(s, t.hashSequence...)
+	s = append(s, utils.ImmutableReorderBytes(txin.PrevTx)...)
+	s = append(s, utils.IntToLittleEndianBytes(txin.PrevIndex)...)
+
+	// handle the supplied scripts script
+	// TODO - Grok this block
+	var scriptCode []byte
+	if witnessScript != nil {
+
+		// witness sript was supplied, this is a p2wpkh
+		scriptCode = append(scriptCode, witnessScript.Serialize()...)
+	} else if redeemScript != nil {
+		// if there is a redeem script and no witness script, then this is a p2sh-p2wpkh
+		scriptCode = append(
+			scriptCode,
+			// make a p2pkh serialization
+			script.MakeP2pkh(redeemScript.Commands[1].Bytes).Serialize()...,
+		)
+	} else {
+
+		pubkey, err := txin.ScriptPubkey(t.Testnet)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get ScriptPubKey because for input idx %d because %s", inputIndex, err.Error())
+		}
+
+		scriptCode = append(scriptCode,
+			script.Makep2sh(pubkey.Commands[1].Bytes).Serialize()...,
+		)
+	}
+
+	// get the amounts for the utxo's for the previous transaction
+	s = append(s, scriptCode...)
+	val, err := txin.Value(t.Testnet)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get the value for the outputs because %s", err.Error())
+	}
+	s = append(s, utils.UInt64ToLittleEndianBytes(uint64(val))...)
+	s = append(s, utils.IntToLittleEndianBytes(txin.Sequence)...)
+	s = append(s, t.HashOutputs()...)
+	s = append(s, utils.IntToLittleEndianBytes(t.Locktime)...)
+	s = append(s, utils.IntToLittleEndianBytes(int(SIGHASH_ALL))...)
+
+	// now that we have s, which is what is to be signed for the transaction during transaction signing
+	// we calculate the hash. The hash of this "serialization" is what is signed during transaction signing
+	h256 := utils.Hash256(s)
+
+	// make the big int
+	return new(big.Int).SetBytes(h256), nil
+
+}
+
 // Verify the input can be spent by this wallet
 func (t Transaction) VerifyInput(inputIndex int) (bool, error) {
 
 	// get the input transaction referenced by the index
 	txIn := t.Inputs[inputIndex]
 
-	// pull off the script pub key
+	// pull off the prevcious output ScriptPubKey. This can be any of the
+	// transaction types
 	scriptPubkey, err := txIn.ScriptPubkey(t.Testnet)
 
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to get ScriptPubKey because %s", err.Error())
 	}
 
 	// check the pubkey type. If it is a P2SH, we need to create
-	// the redeem script to spend the funds
+	// the redeem script to spend the funds.
+	// If it is p2wphk, we need to handle it differently as there
+	// will need to parse the witness program
 	var redeemScript *script.Script
+	z := new(big.Int)
+	var witness [][]byte
 	if scriptPubkey.IsP2shScriptPubkey() {
 		// Get the redeem script off the input, which is the last element
 		cmd := txIn.ScriptSig.Commands[len(txIn.ScriptSig.Commands)-1]
@@ -280,14 +597,40 @@ func (t Transaction) VerifyInput(inputIndex int) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-	} else {
-		redeemScript = nil
-	}
 
-	// get the script sig from the redeem script
-	z, err := t.SigHash(inputIndex, redeemScript, SIGHASH_ALL, true)
-	if err != nil {
-		return false, err
+		// handle p2sh-pwpkh type. This is where the witness signature
+		// was embedded in the redeem script.
+		// The script embedded could be either w p2wpkh or p2wsh type script
+		if redeemScript.IsP2wpkhScriptPubkey() {
+			// calculate Z the special way
+			z, err = t.SigHashSegwit(inputIndex, redeemScript, nil)
+
+			if err != nil {
+				return false, fmt.Errorf("failed to calculate z because %s", err.Error())
+			}
+
+			// since we are segwit aware, assign the witness data field
+			witness = txIn.Witness
+		} else {
+			witness = nil
+		}
+
+	} else if scriptPubkey.IsP2wpkhScriptPubkey() {
+		// handle segwit type Outpoint (prevHash.ScriptPubKey)
+		// most of the processing path is the same as p2sh, we just
+		// need to handle the witness data correctly in this path
+		z, err = t.SigHashSegwit(inputIndex, nil, nil)
+		if err != nil {
+			return false, fmt.Errorf("failed to calculate z because %s", err.Error())
+		}
+		witness = t.Witness
+	} else {
+		z, err = t.SigHash(inputIndex, nil, SIGHASH_ALL, true)
+		if err != nil {
+			return false, fmt.Errorf("failed to calculate z because %s", err.Error())
+		}
+		witness = nil
+		redeemScript = nil
 	}
 
 	// Combine the scripts
@@ -296,8 +639,7 @@ func (t Transaction) VerifyInput(inputIndex int) (bool, error) {
 	// valuate the transaction. If it evaluates to true, then the redeem script
 	// or the pub key supplied is valid for the transaction and is allowed
 	// to spend the funds encumbered with this
-	return combinedScript.Evaluate(z, uint64(t.Locktime), uint64(txIn.Sequence), uint64(t.Version)), nil
-
+	return combinedScript.Evaluate(z, uint64(t.Locktime), uint64(txIn.Sequence), uint64(t.Version), witness), nil
 }
 
 // verify the transaction is valid

@@ -22,6 +22,10 @@ type Stack struct {
 	Elements []StackElement
 }
 
+func (s Stack) Len() int {
+	return len(s.Elements)
+}
+
 // Abs returns the absolute value of x.
 func abs(x int) int {
 	if x < 0 {

@@ -107,7 +107,7 @@ func TestCombine(t *testing.T) {
 	// 1: Sig
 	// 2: PubKey
 	// 3: 0xac 		// OP_CHECKSIG
-	if !combinedScript.Evaluate(new(big.Int).SetBytes(zBytes), 0, 0, 0) {
+	if !combinedScript.Evaluate(new(big.Int).SetBytes(zBytes), 0, 0, 0, nil) {
 		t.Fatalf("evaulate failed")
 	}
 }
@@ -137,7 +137,7 @@ func TestScriptOpCodes(t *testing.T) {
 	scriptSig.Commands = append(scriptSig.Commands, Command{Bytes: scriptSigBytes})
 	combinedScript := Combine(*scriptPubKey, *scriptSig)
 
-	if !combinedScript.Evaluate(big.NewInt(0), 0, 0, 0) {
+	if !combinedScript.Evaluate(big.NewInt(0), 0, 0, 0, nil) {
 		t.Fatalf("failed to evaulate the script")
 	}
 }
@@ -156,7 +156,7 @@ func TestCollision(t *testing.T) {
 
 	combinedScript := Combine(*scriptPubKey, *scriptSig)
 
-	if !combinedScript.Evaluate(big.NewInt(0), 0, 0, 0) {
+	if !combinedScript.Evaluate(big.NewInt(0), 0, 0, 0, nil) {
 		t.Fatalf("failed to evaluate script")
 	}
 }

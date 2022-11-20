@@ -23,6 +23,9 @@ type TransactionInput struct {
 
 	// 4 bytes little endian
 	Sequence int
+
+	// witness byte arrays of witness data
+	Witness [][]byte
 }
 
 func (txIn TransactionInput) String() string {
@@ -40,6 +43,7 @@ func (txIn TransactionInput) FetchTx(testnet bool) (*Transaction, error) {
 }
 
 // Get the output value by looking up the tx hash. Returns the amount in satoshi.
+// TODO - Upgrade this to be a Uint64
 func (txIn TransactionInput) Value(testnet bool) (int, error) {
 	tx, err := txIn.FetchTx(testnet)
 
@@ -117,11 +121,15 @@ func MakeTransactionInput(prevTx []byte, prevIndex int, scriptSig *script.Script
 
 // Get the ScriptPubKey by looking up the tx hash. Returns a Script object.
 func (txIn TransactionInput) ScriptPubkey(testnet bool) (*script.Script, error) {
+
+	// fetch the previous transaction so we can get a handle to the output from
+	// this transaction.
 	tx, err := txIn.FetchTx(testnet)
 
 	if err != nil {
 		return nil, err
 	}
 
+	// return the ScriptPubkey for the output index referenced
 	return tx.Outputs[txIn.PrevIndex].ScriptPubkey, nil
 }

@@ -215,6 +215,34 @@ func IntToLittleEndianBytes(n int) []byte {
 	return b
 }
 
+func UInt8ToLittleEndianBytes(n uint8) byte {
+	// there is no libary in binary that does this, so we need try something else
+
+	// TODO - Check the endians of the machine to see if we even
+	// need to do this
+	// _n := bits.Reverse8(n)
+
+	// okay, this is really kludgy but, I cant think of a better way
+	// put it as a uint16, depending on the machine, the byte will
+	// either be MSB or LSB. So, check which one is non 0x00 and
+	// return that one
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint16(b, uint16(n))
+
+	if b[len(b)-1] != 0x00 {
+		return b[len(b)-1]
+	} else {
+		return b[0]
+	}
+
+}
+
+func UInt16ToLittleEndianBytes(n uint16) []byte {
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint16(b, uint16(n))
+	return b
+}
+
 func UInt32ToLittleEndianBytes(n uint32) []byte {
 	b := make([]byte, 4)
 	binary.LittleEndian.PutUint32(b, uint32(n))
