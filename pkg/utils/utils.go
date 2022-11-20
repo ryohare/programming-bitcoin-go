@@ -561,6 +561,26 @@ func IsNull(b []byte) bool {
 	return true
 }
 
+func BitFieldToBytes(bits []byte) ([]byte, error) {
+	if len(bits)%8 != 0 {
+		return nil, fmt.Errorf("bitfield is not divisible by 8")
+	}
+	result := make([]byte, 4)
+	binary.LittleEndian.PutUint32(result, uint32(len(bits)/8))
+
+	// iterate over the bits
+	for i, bit := range bits {
+		byteIndex, bitIndex := divmod(i, 8)
+
+		// if the bit is set to 1 in the bit mask
+		if bit == 1 {
+			result[byteIndex] |= 1 << bitIndex
+		}
+	}
+
+	return result, nil
+}
+
 func BytesToBitField(b []byte) []byte {
 	flagBits := []byte{}
 
@@ -572,4 +592,10 @@ func BytesToBitField(b []byte) []byte {
 	}
 
 	return flagBits
+}
+
+func divmod(numerator, denominator int) (quotient, remainder int) {
+	quotient = numerator / denominator // integer division, decimals are truncated
+	remainder = numerator % denominator
+	return
 }
