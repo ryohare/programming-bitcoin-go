@@ -1,7 +1,6 @@
 package tx
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -38,13 +37,17 @@ func (t TxFetcher) Fetch(txID string, testnet, fresh bool) (*Transaction, error)
 	}
 	// need to reporder the bytes for string print
 	// reverse the address
-	txStr := fmt.Sprintf("%x", utils.MutableReorderBytes([]byte(txID)))
+	// txStr := fmt.Sprintf("%x ", utils.MutableReorderBytes([]byte(txID)))
 
-	url := fmt.Sprintf("%s/tx/%s/raw", getUrl(testnet), txStr)
+	url := fmt.Sprintf("%s/tx/%s/raw", getUrl(testnet), txID)
 	resp, err := http.Get(url)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get HTTP 200 response. Recieved %s", resp.Status)
 	}
 
 	raw, err := ioutil.ReadAll(resp.Body)
@@ -53,19 +56,35 @@ func (t TxFetcher) Fetch(txID string, testnet, fresh bool) (*Transaction, error)
 		return nil, err
 	}
 
-	// check --- i dont know what right now
-	var trans *Transaction
-	if raw[4] == 0 {
-		raw = append(raw[:4], raw[6:]...)
-		trans = ParseTransaction(raw)
-		reader := bytes.NewReader(raw[len(raw)-4:])
-		trans.Locktime = utils.LittleEndianToInt(reader)
-	} else {
-		trans = ParseTransaction(raw)
+	// This was code to ignore the segwit transactions
+	// if raw[4] == 0 {
+	// 	raw = append(raw[:4], raw[6:]...)
+	// 	trans = ParseTransaction(raw)
+	// 	reader := bytes.NewReader(raw[len(raw)-4:])
+	// 	trans.Locktime = utils.LittleEndianToInt(reader)
+	// } else {
+	// 	trans = ParseTransaction(raw)
+	// }
+	tx, err := ParseTransaction(raw)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse transaction because %s", err.Error())
 	}
 
-	trans.Testnet = testnet
-	t.cache[txID] = trans
+	// make sure the tx received is the hash requested
+	var calculated string
+	if tx.Segwit {
+		calculated = tx.ID()
+	} else {
+		calculated = fmt.Sprintf("%x", utils.ImmutableReorderBytes(utils.Hash256(raw)))
+	}
 
-	return trans, nil
+	if calculated != txID {
+		return nil, fmt.Errorf("failed to retrieve the correct transaction. Received %s, requested %s", calculated, txID)
+	}
+
+	tx.Testnet = testnet
+	t.cache[txID] = tx
+
+	return tx, nil
 }

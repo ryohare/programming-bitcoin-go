@@ -135,15 +135,17 @@ func (t Transaction) serializeSegwit() []byte {
 	return tx
 }
 
-// Returns the byte serialization of the transaction
+// Serialize a transaction into a byte array
 func (t Transaction) Serialize() []byte {
-
-	// if the transaction is segwit, it needs to be serialized differently
-	// to include the witness program for each input as well.
 	if t.Segwit {
 		return t.serializeSegwit()
+	} else {
+		return t.serializeLegacy()
 	}
+}
 
+// Returns the byte serialization of the transaction
+func (t Transaction) serializeLegacy() []byte {
 	// setup the var that will be the serialization
 	var tx []byte
 
@@ -174,16 +176,13 @@ func (t Transaction) Serialize() []byte {
 
 // Return the transaction Id (hash) of the transaction as a byte array
 func (t Transaction) Hash() []byte {
-
-	// segwit sesrialization is the same as the legacy, the main swithc on segwit
-	// is handled in the Serialize function, so we can call this just as is.
-	serial := t.Serialize()
+	serial := t.serializeLegacy()
 	return utils.MutableReorderBytes(utils.Hash256(serial))
 }
 
 // Returns the transaction Id as a string
 func (t Transaction) ID() string {
-	return string(t.Hash())
+	return fmt.Sprintf("%x", t.Hash())
 }
 
 // Parse a segwit transaction
@@ -266,11 +265,14 @@ func ParseSegwit(serialization []byte) (*Transaction, error) {
 	//
 	t.Locktime = utils.LittleEndianToInt(reader)
 
+	// set the internal segwit flag
+	t.Segwit = true
+
 	return t, nil
 }
 
 // Parse a transaction from a byte stream
-func ParseTransaction(serialization []byte) *Transaction {
+func ParseTransaction(serialization []byte) (*Transaction, error) {
 	t := &Transaction{}
 
 	// make a reader to easily read in the serialization
@@ -279,7 +281,11 @@ func ParseTransaction(serialization []byte) *Transaction {
 	// segwith bolt-on, read 4 bytes and ignore and look for
 	// the segwit marker in the 5th byte of the transaction
 	for i := 0; i < 4; i++ {
-		reader.ReadByte()
+		_, err := reader.ReadByte()
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// now read for the segwith marker, if we find it, go the special
@@ -287,7 +293,7 @@ func ParseTransaction(serialization []byte) *Transaction {
 	// the originally defined processing path
 	segwit, _ := reader.ReadByte()
 	if segwit == 0x00 {
-		ParseSegwit(serialization)
+		return ParseSegwit(serialization)
 	} else {
 		reader.Reset(serialization)
 	}
@@ -326,7 +332,7 @@ func ParseTransaction(serialization []byte) *Transaction {
 	//
 	t.Locktime = utils.LittleEndianToInt(reader)
 
-	return t
+	return t, nil
 }
 
 // Calculates the fee which should be used for a transaction

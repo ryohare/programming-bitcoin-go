@@ -164,3 +164,11 @@ func TestCollision(t *testing.T) {
 func TestP2pkh(t *testing.T) {
 	MakeP2pkh([]byte{})
 }
+
+func TestMakeP2wpkhSmoke(t *testing.T) {
+	MakeP2wpkh([]byte{})
+}
+
+func TestP2wpkh(t *testing.T) {
+
+}

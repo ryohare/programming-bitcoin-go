@@ -30,7 +30,11 @@ func TestSerializeTransaction(t *testing.T) {
 		t.Errorf("failed to parse testTx because %s", err.Error())
 	}
 
-	serial := ParseTransaction(tx)
+	serial, err := ParseTransaction(tx)
+
+	if err != nil {
+		t.Fatalf("failed to parse transaction because %s", err.Error())
+	}
 
 	// re-serialize
 	serial.Serialize()
@@ -208,5 +212,21 @@ func TestP2shSignatureValidation(t *testing.T) {
 	}
 	if !result {
 		t.Fatalf("failed to verify the signature")
+	}
+}
+
+func TestVerityP2wpkh(t *testing.T) {
+	tx, err := TxFetcherSvc.Fetch(
+		"d869f854e1f8788bcff294cc83b280942a8c728de71eb709a2c29d10bfe21b7c",
+		true,
+		true,
+	)
+
+	if err != nil {
+		t.Fatalf("failed to fetch tx because %s", err.Error())
+	}
+
+	if !tx.Verify(true) {
+		t.Fatalf("failed to verify tranansaction")
 	}
 }
